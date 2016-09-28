@@ -5,23 +5,29 @@ Cloud Health
 Collects all required data for Health Dashboard and stores it to ES for future use.
 
 
-health/
--------
+How To Use & Run
+----------------
 
-All project scripts and code is inside this directory
+Build Docker Image
+~~~~~~~~~~~~~~~~~~
 
-
-health/es_init.sh
-~~~~~~~~~~~~~~~~~
-
-Contains code that initializes ElasticSearch:
-* Adds index "ms_health_idx_1"
-* Adds alias "ms_health" -> "ms_health_idx_1"
-* Set's "ms_health_idx_1" mapping as in file es_health_index.json
+.. code-block:: sh
+    docker run -d --name health-app -v ~/health/etc:/etc/health -p 6000:5000 health
 
 
+Run Docker Container
+~~~~~~~~~~~~~~~~~~~~
 
-extra/*
--------
 
-Useful scripts and data that were developed during the development.
+.. code-block:: sh
+    # Update ~/health/etc/config.json file to match your configuration
+    vi ~/health/etc/config.json
+    # Run container
+    docker run -d --name health-app -v ~/health/etc:/etc/health -p 6000:5000 health
+
+
+Get App Logs
+~~~~~~~~~~~~
+
+.. code-block:: sh
+    docker logs health-app
