@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2016: Mirantis Inc.
 # All Rights Reserved.
 #
@@ -15,25 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-import sys
-
-import requests
+import mock
+import testtools
 
 
-def main():
-    bulk = []
+class TestCase(testtools.TestCase):
 
-    with open(sys.argv[1]) as f:
-        for hit in json.load(f)["hits"]["hits"]:
-            bulk.append('{ "index": {}}')
-            bulk.append(json.dumps(hit["_source"]))
-
-    print(len(bulk))
-    bulk = "\n".join(bulk)
-
-    requests.post(sys.argv[2], data=bulk)
-
-
-if __name__ == "__main__":
-    main()
+    def setUp(self):
+        super(TestCase, self).setUp()
+        self.addCleanup(mock.patch.stopall)
