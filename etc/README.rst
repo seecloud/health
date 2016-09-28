@@ -22,6 +22,6 @@ So to make this work we need to specify:
 Placement
 ---------
 
-Update ``conf.json`` file and place it in /etc/health/ directory.
+Update ``config.json`` file and place it in /etc/health/ directory.
 If you run docker container with health the best way is to mount volume
-to /etc/health that contains conf.json file.
+to /etc/health that contains config.json file.
