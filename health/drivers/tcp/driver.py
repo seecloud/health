@@ -18,11 +18,9 @@
 import copy
 import json
 
-
-from health.drivers import utils
 import requests
 
-
+from health.drivers import utils
 
 
 STATS = {
@@ -167,4 +165,3 @@ def main(es, latest_aggregated_ts=None):
             for service in bucket["services"]["buckets"]:
                 r.append(record_from_bucket(service, ts, service["key"]))
         yield r
-

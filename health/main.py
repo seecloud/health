@@ -14,6 +14,7 @@
 #    under the License.
 
 import json
+import logging
 import sys
 import time
 import traceback
@@ -22,9 +23,13 @@ import jsonschema
 import requests
 import schedule
 
-from health.drivers import utils
 from health.drivers.tcp import driver as tcp_driver
+from health.drivers import utils
 from health.mapping import es
+
+
+LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
 
 CONF_PATH = "/etc/health/config.json"
@@ -79,6 +84,9 @@ CONF = None
 
 
 def job():
+    started_at = time.time()
+    logging.info("Starting Syncing Job")
+
     backend_url = "%s/ms_health/service" % CONF["backend"]["elastic"]
 
     min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
@@ -88,15 +96,15 @@ def job():
         data_generator = tcp_driver.main(src["driver"]["elastic_src"],
                                          latest_aggregated_ts=max_ts)
 
-        print("Fetching data from %s region" % src["region"])
+        logging.info("Start syncing %s region" % src["region"])
 
         for i, data_interval in enumerate(data_generator):
-            print("Fetching data from %s region, chunk %s"
-                  % (src["region"], i))
+            logging.info("Start syncing %s region" % src["region"])
 
             if not data_interval:
-                print("Region %s is already synced." % src["region"])
-                return
+                logging.info("Fetched data from %s region, chunk %s"
+                             % (src["region"], i))
+                continue
 
             req_data = []
             for d in data_interval:
@@ -105,8 +113,12 @@ def job():
                 req_data.append('{"index": {}}')
                 req_data.append(json.dumps(d))
             req_data = "\n".join(req_data)
-            print("Posting data to elastic %s" % i)
+            logging.info("Sending data to elastic %s" % i)
             r = requests.post("%s/_bulk" % backend_url, data=req_data)
+            logging.debug(r.json())
+
+        logging.info("Syncing Job: Completed in %.3f seconds"
+                     % (time.time() - started_at))
 
 
 def main():
@@ -139,7 +151,6 @@ def main():
         while True:
             schedule.run_pending()
             time.sleep(1)
-
 
 
 if __name__ == "__main__":
