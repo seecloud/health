@@ -2,6 +2,12 @@ Cloud Health
 ============
 
 
+.. image:: https://coveralls.io/repos/github/seecloud/health/badge.svg?branch=master
+    :target: https://coveralls.io/github/seecloud/health?branch=master
+
+.. image:: https://travis-ci.org/seecloud/health.svg?branch=master
+    :target: https://travis-ci.org/seecloud/health
+
 Collects all required data for Health Dashboard and stores it to ES for future use.
 
 
