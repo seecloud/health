@@ -14,12 +14,14 @@ Usage
 Just run this command:
 
 .. code-block:: sh
+
     ES="http://172.16.5.147:9200" INDEXES="log" BACKUP_PATH="/mount/es_backup/logs" python snapshot_es_index.py
 
 
 If you need to debug use DEBUG=True env variable
 
 .. code-block:: sh
+
     DEBUG=True [....] python shanpshot_es_index.py
 
 
