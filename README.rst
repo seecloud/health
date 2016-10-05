@@ -19,7 +19,7 @@ Build Docker Image
 
 .. code-block:: sh
 
-    docker run -d --name health-app -v ~/health/etc:/etc/health -p 6000:5000 health
+    docker build -t health:latest .
 
 
 Run Docker Container
