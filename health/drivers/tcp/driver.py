@@ -157,8 +157,6 @@ def main(es, latest_aggregated_ts=None):
         resp = requests.post("%s/_search?search_type=count" % es,
                              data=json.dumps(body)).json()
 
-        print(resp)
-
         r = []
         for bucket in resp["aggregations"]["per_minute"]["buckets"]:
 
