@@ -20,23 +20,23 @@ import requests
 _http_codes = {
     "type": "object",
     "properties": {
-        "1xx": {"type": "integer", "index": "no"},
-        "2xx": {"type": "integer", "index": "no"},
-        "3xx": {"type": "integer", "index": "no"},
-        "4xx": {"type": "integer", "index": "no"},
-        "5xx": {"type": "integer", "index": "no"}
+        "1xx": {"type": "integer"},
+        "2xx": {"type": "integer"},
+        "3xx": {"type": "integer"},
+        "4xx": {"type": "integer"},
+        "5xx": {"type": "integer"}
     }
 }
 
 _stats = {
     "type": "object",
     "properties": {
-        "min": {"type": "float", "index": "no"},
-        "avg": {"type": "float", "index": "no"},
-        "max": {"type": "float", "index": "no"},
-        "sum": {"type": "float", "index": "no"},
-        "variance": {"type": "float", "index": "no"},
-        "std_deviation": {"type": "float", "index": "no"},
+        "min": {"type": "float"},
+        "avg": {"type": "float"},
+        "max": {"type": "float"},
+        "sum": {"type": "float"},
+        "variance": {"type": "float"},
+        "std_deviation": {"type": "float"},
         "std_deviation_bounds": {
             "type": "object",
             "properties": {
@@ -44,9 +44,9 @@ _stats = {
                 "lower": {"type": "float", "index": "no"}
             }
         },
-        "50th": {"type": "float", "index": "no"},
-        "95th": {"type": "float", "index": "no"},
-        "99th": {"type": "float", "index": "no"}
+        "50th": {"type": "float"},
+        "95th": {"type": "float"},
+        "99th": {"type": "float"}
     }
 }
 
