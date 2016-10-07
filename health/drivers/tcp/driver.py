@@ -114,7 +114,7 @@ def transform_http_codes(buckets):
 
 
 def fci(http_codes):
-    all_codes = sum(v for k, v in http_codes.items())
+    all_codes = sum(http_codes.values())
     if all_codes:
         return float((all_codes - http_codes["5xx"])) / all_codes
     else:

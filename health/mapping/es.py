@@ -14,6 +14,7 @@
 #    under the License.
 
 import json
+import logging
 
 import requests
 
@@ -78,9 +79,9 @@ mapping = {
 def init_elastic(es, index_to_create="ms_health_idx_1"):
     r = requests.get("%s/%s" % (es, "ms_health"))
     if r.status_code == 200:
-        print("Index ms_health already exists, nothing to do!")
+        logging.info("Index ms_health already exists, nothing to do!")
     else:
-        requests.post("%s/%s" % (es, index_to_create),
-                      data=json.dumps(mapping))
+        r = requests.post("%s/%s" % (es, index_to_create),
+                          data=json.dumps(mapping))
         if r.status_code == 200:
-            print("Index %s created successfully" % index_to_create)
+            logging.info("Index %s created successfully", index_to_create)

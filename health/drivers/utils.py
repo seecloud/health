@@ -34,11 +34,11 @@ def get_min_max_timestamps(es, field):
 
     r_min = requests.get(
         url, data=json.dumps({"sort": {field: {"order": "asc"}}}))
-    r_max = requests.get(
-        url, data=json.dumps({"sort": {field: {"order": "desc"}}}))
-
     if r_min.json()["hits"]["total"] == 0:
         return [None, None]
+
+    r_max = requests.get(
+        url, data=json.dumps({"sort": {field: {"order": "desc"}}}))
 
     return [el.json()["hits"]["hits"][0]["_source"][field]
             for el in [r_min, r_max]]
@@ -46,7 +46,6 @@ def get_min_max_timestamps(es, field):
 
 def incremental_scan(max_ts, current_ts):
     days = distance_in_days(max_ts, current_ts)
-    intervals = []
 
     if days == 0:
         return [{

@@ -13,11 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import argparse
 import json
 import logging
 import sys
 import time
-import traceback
 
 import jsonschema
 import requests
@@ -29,10 +29,8 @@ from health.mapping import es
 
 
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
-
-CONF_PATH = "/etc/health/config.json"
+DEFAULT_CONF_PATH = "/etc/health/config.json"
 CONF_SCHEMA = {
     "type": "object",
     "$schema": "http://json-schema.org/draft-04/schema",
@@ -122,31 +120,30 @@ def job():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config-path', default=DEFAULT_CONF_PATH)
+    parser.add_argument('-d', '--debug', action='store_const',
+                        const=logging.DEBUG, default=logging.INFO)
+    args = parser.parse_args(sys.argv[1:])
+    logging.basicConfig(format=LOGGING_FORMAT, level=args.debug)
+
     global CONF
     try:
-        with open(CONF_PATH) as f:
+        with open(args.config_path) as f:
             CONF = json.load(f)
-            jsonschema.validate(CONF, CONF_SCHEMA)
-
-    except (OSError, IOError):
-        print("Sorry, couldn't open configuration file: %s" % CONF_PATH)
-        traceback.print_exc()
-        sys.exit(1)
-    except jsonschema.ValidationError as e:
-        print(e.message)
-        sys.exit(1)
-    except jsonschema.SchemaError as e:
-        print(e)
-        sys.exit(1)
+        jsonschema.validate(CONF, CONF_SCHEMA)
+    except (OSError, IOError,
+            jsonschema.ValidationError,
+            jsonschema.SchemaError) as e:
+        logging.error(e)
+        raise
     else:
         # Init Elastic index in backend
         es.init_elastic(CONF["backend"]["elastic"])
 
         # Setup periodic job that does aggregation magic
         run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
-        schedule.every(run_every_min).minutes.do(job)
-
-        job()
+        schedule.every(run_every_min).minutes.do(job).run()
 
         while True:
             schedule.run_pending()
