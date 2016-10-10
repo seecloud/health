@@ -1,17 +1,15 @@
 {
     "sources": [
         {
-            "region": "<cloud_region>",
+            "region": "hooli-west-1",
             "driver": {
                 "type": "tcp",
-                "elastic_url": "<elastic_url>",
-                "elastic_index": "<index_name_or_allias>",
-                "elastic_type": "<type_name>"
+                "elastic_src": "http://1.2.3.4:9200/log-*/log"
             }
         }
     ],
     "backend": {
-        "elastic": "<elatic_url>",
+        "elastic": "http://4.3.2.1:9200/",
         "elastic_index": "ms_health_idx_1"
     },
     "config": {
