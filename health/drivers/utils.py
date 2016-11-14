@@ -15,6 +15,7 @@
 
 import datetime
 import json
+import logging
 
 import requests
 
@@ -34,11 +35,16 @@ def get_min_max_timestamps(es, field):
 
     r_min = requests.get(
         url, data=json.dumps({"sort": {field: {"order": "asc"}}}))
-    r_max = requests.get(
-        url, data=json.dumps({"sort": {field: {"order": "desc"}}}))
 
+    if not r_min.ok:
+        logging.error("Got {} status when requesting {}: {}".format(
+            r_min.status_code, url, r_min.text))
+        return [None, None]
     if r_min.json()["hits"]["total"] == 0:
         return [None, None]
+
+    r_max = requests.get(
+        url, data=json.dumps({"sort": {field: {"order": "desc"}}}))
 
     return [el.json()["hits"]["hits"][0]["_source"][field]
             for el in [r_min, r_max]]

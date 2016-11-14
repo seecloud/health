@@ -1,5 +1,5 @@
 
-from tests.unit import test
+from tests.unit import test  # noqa
 
 
 class NoopTestCase(test.TestCase):
