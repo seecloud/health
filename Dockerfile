@@ -18,5 +18,5 @@ RUN pip install -r requirements.txt
 WORKDIR /app/health
 EXPOSE 5000
 
-ENTRYPOINT ["python"]
-CMD ["main.py"]
+ENTRYPOINT ["bash"]
+CMD ["main.sh"]
