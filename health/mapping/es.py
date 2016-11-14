@@ -62,8 +62,8 @@ mapping = {
             "_all": {"enabled": False},
             "properties": {
                 "timestamp": {"type": "date"},
-                "service": {"type": "string"},
-                "region": {"type": "string"},
+                "service": {"type": "keyword"},
+                "region": {"type": "keyword"},
                 "requests_count": {"type": "integer"},
                 "fci": {"type": "float"},
                 "http_codes": _http_codes,
@@ -76,11 +76,34 @@ mapping = {
 
 
 def init_elastic(es, index_to_create="ms_health_idx_1"):
-    r = requests.get("%s/%s" % (es, "ms_health"))
-    if r.status_code == 200:
-        print("Index ms_health already exists, nothing to do!")
+    # TODO(kzaitsev): replace prints with logging
+    r = requests.get("%s/%s" % (es, index_to_create))
+    if r.ok:
+        print("Index {} already exists, nothing to do!".format(
+            index_to_create))
     else:
-        requests.post("%s/%s" % (es, index_to_create),
-                      data=json.dumps(mapping))
-        if r.status_code == 200:
-            print("Index %s created successfully" % index_to_create)
+        r = requests.put("%s/%s" % (es, index_to_create),
+                         data=json.dumps(mapping))
+        if r.ok:
+            print("Index {} created successfully".format(index_to_create))
+        else:
+            print("Got {} status when creating index {}. {}".format(
+                r.status_code, index_to_create, r.text))
+
+    # enable fielddata for some Logger and http_status:
+    for field in ['Logger', 'http_status']:
+        data = {
+            "properties": {
+                field: {
+                    "type": "text",
+                    "fielddata": True,
+                }
+            }
+        }
+        r = requests.put("{}/log-*/_mapping/log".format(es),
+                         data=json.dumps(data))
+        if r.ok:
+            print("Set '{}' fielddata successfull: {}".format(field, r.text))
+        else:
+            print("Got {} status when setting '{}' metadata. {}".format(
+                r.status_code, field, r.text))
