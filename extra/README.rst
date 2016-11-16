@@ -36,3 +36,17 @@ Arguments
 * *REPO_NAME* Name of backup, all it's data will be store in <REPO_PATH>/<REPO_NAME>
 * *DEBUG* Print exception or not
 
+
+es_result_to_es.py
+------------------
+
+Allows loading test data to elasticsearch
+
+Usage
+~~~~~
+
+Run this command:
+
+.. code-block:: sh
+
+    python es_result_to_es.py ./tcp_log.json http://127.0.0.1:9200/

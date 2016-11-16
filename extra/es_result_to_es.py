@@ -17,6 +17,7 @@
 
 import json
 import sys
+import urlparse
 
 import requests
 
@@ -24,15 +25,31 @@ import requests
 def main():
     bulk = []
 
+    if len(sys.argv) < 3:
+        print("Usage:\n {} "
+              "./tcp_log.json "
+              "http://127.0.0.1:9200/".format(sys.argv[0]))
+        sys.exit(1)
+
+    FIELDS = ['_index', '_type', '_id']
     with open(sys.argv[1]) as f:
         for hit in json.load(f)["hits"]["hits"]:
-            bulk.append('{ "index": {}}')
+            index_dct = {}
+
+            for field in FIELDS:
+                index_dct[field] = hit[field]
+            bulk.append(json.dumps({"index": index_dct}))
             bulk.append(json.dumps(hit["_source"]))
 
-    print(len(bulk))
     bulk = "\n".join(bulk)
 
-    requests.post(sys.argv[2], data=bulk)
+    resp = requests.post(urlparse.urljoin(sys.argv[2], "_bulk"), data=bulk)
+    if resp.ok:
+        print("Successfully loaded data from {} to ElasticSearch".format(
+            sys.argv[1]))
+    else:
+        print("Got a {} response from ElasticSearch".format(resp.status_code))
+        print(resp.text)
 
 
 if __name__ == "__main__":
