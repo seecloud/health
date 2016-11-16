@@ -22,3 +22,6 @@ class TestCase(testtools.TestCase):
     def setUp(self):
         super(TestCase, self).setUp()
         self.addCleanup(mock.patch.stopall)
+
+    def mock_request(self):
+        return mock.patch('requests.api.request').start()
