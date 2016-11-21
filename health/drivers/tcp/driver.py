@@ -17,6 +17,7 @@
 
 import copy
 import json
+import logging
 
 import requests
 
@@ -48,17 +49,14 @@ STATS = {
 
 
 AGG_REQUEST = {
+    "size": 0,  # this is a count request
     "query": {
-        "filtered": {
-            "filter": {
-                "and": {
-                    "filters": [
-                      {"exists": {"field": "http_method"}},
-                      {"exists": {"field": "http_status"}},
-                      {"exists": {"field": "http_response_time"}}
-                    ]
-                }
-            }
+        "bool": {
+            "filter": [
+                {"exists": {"field": "http_method"}},
+                {"exists": {"field": "http_status"}},
+                {"exists": {"field": "http_response_time"}},
+            ]
         }
     },
     "aggs": {
@@ -99,7 +97,7 @@ AGG_REQUEST["aggs"]["per_minute"]["aggs"]["services"]["aggs"].update(STATS)
 
 def get_request(ts_range):
     query = copy.deepcopy(AGG_REQUEST)
-    query["query"]["filtered"]["filter"]["and"]["filters"].append({
+    query["query"]["bool"]["filter"].append({
         "range": {"Timestamp": ts_range}
     })
     return query
@@ -154,8 +152,14 @@ def main(es, latest_aggregated_ts=None):
 
     for interval in intervals:
         body = get_request(interval)
-        resp = requests.post("%s/_search?search_type=count" % es,
-                             data=json.dumps(body)).json()
+        resp = requests.post("%s/_search" % es,
+                             data=json.dumps(body))
+
+        if not resp.ok:
+            logging.error("Got a non-ok response for interval {}\n{}".format(
+                interval, resp.text))
+            continue
+        resp = resp.json()
 
         r = []
         for bucket in resp["aggregations"]["per_minute"]["buckets"]:
