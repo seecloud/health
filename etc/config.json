@@ -3,7 +3,7 @@
         {
             "region": "hooli-west-1",
             "driver": {
-                "type": "tcp",
+                "type": "health.tcp",
                 "elastic_src": "http://1.2.3.4:9200/log-*/log"
             }
         }

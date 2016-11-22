@@ -22,8 +22,8 @@ import traceback
 import jsonschema
 import requests
 import schedule
+import stevedore
 
-from health.drivers.tcp import driver as tcp_driver
 from health.drivers import utils
 from health.mapping import es
 
@@ -83,6 +83,18 @@ CONF_SCHEMA = {
 CONF = None
 
 
+def _get_driver(driver_type):
+    em = stevedore.ExtensionManager("health.source_backends")
+
+    if driver_type not in em:
+        logging.error(
+            "I was requested to use '{}' as health backend, "
+            "but I could not find it. Available backends: {}".format(
+                driver_type, em.names()))
+        return None
+    return em[driver_type].plugin
+
+
 def job():
     started_at = time.time()
     logging.info("Starting Syncing Job")
@@ -92,9 +104,11 @@ def job():
     min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
 
     for src in CONF["sources"]:
-        # TODO(boris-42): Make this actually pluggable
-        data_generator = tcp_driver.main(src["driver"]["elastic_src"],
-                                         latest_aggregated_ts=max_ts)
+        driver = _get_driver(src["driver"]["type"])
+        if driver is None:
+            continue
+        data_generator = driver(src["driver"],
+                                latest_aggregated_ts=max_ts)
 
         logging.info("Start syncing %s region" % src["region"])
 
