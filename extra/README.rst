@@ -50,3 +50,19 @@ Run this command:
 .. code-block:: sh
 
     python es_result_to_es.py ./tcp_log.json http://127.0.0.1:9200/
+
+
+es_test_data.py
+---------------
+
+Populates Health data to ms_health/service for period of latest 30 days
+
+Usage
+~~~~~
+
+Run this command:
+
+.. code-block:: sh
+
+    python es_test_data.py http://127.0.0.1:9200/ms_health/service
+
