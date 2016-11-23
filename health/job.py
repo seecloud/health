@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import importlib
 import json
 import logging
 import sys
@@ -23,7 +24,6 @@ import jsonschema
 import requests
 import schedule
 
-from health.drivers.tcp import driver as tcp_driver
 from health.drivers import utils
 from health.mapping import es
 
@@ -83,6 +83,15 @@ CONF_SCHEMA = {
 CONF = None
 
 
+def _get_driver(driver_type):
+    try:
+        return importlib.import_module("." + driver_type + ".driver",
+                                       "health.drivers")
+    except ImportError:
+        logging.error("Could not load driver for '{}'".format(driver_type))
+        raise
+
+
 def job():
     started_at = time.time()
     logging.info("Starting Syncing Job")
@@ -92,9 +101,9 @@ def job():
     min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
 
     for src in CONF["sources"]:
-        # TODO(boris-42): Make this actually pluggable
-        data_generator = tcp_driver.main(src["driver"]["elastic_src"],
-                                         latest_aggregated_ts=max_ts)
+        driver = _get_driver(src["driver"]["type"])
+        data_generator = driver.main(src["driver"],
+                                     latest_aggregated_ts=max_ts)
 
         logging.info("Start syncing %s region" % src["region"])
 
