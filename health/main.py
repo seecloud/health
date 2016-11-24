@@ -14,11 +14,11 @@ import json
 import logging
 import os
 
-from api.v1 import health
-from api.v1 import regions
 import flask
 from flask_helpers import routing  # noqa
 
+from health.api.v1 import health
+from health.api.v1 import regions
 
 app = flask.Flask(__name__, static_folder=None)
 config_path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
