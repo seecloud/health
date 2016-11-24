@@ -142,7 +142,8 @@ def record_from_bucket(bucket, timestamp, service):
     return record
 
 
-def main(es, latest_aggregated_ts=None):
+def main(config, latest_aggregated_ts=None):
+    es = config["elastic_src"]
     ts_min, ts_max = utils.get_min_max_timestamps(es, "Timestamp")
 
     if latest_aggregated_ts:

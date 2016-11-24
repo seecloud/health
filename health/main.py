@@ -14,10 +14,11 @@ import json
 import logging
 import os
 
-from api.v1 import health
 import flask
 from flask_helpers import routing  # noqa
 
+from health.api.v1 import health
+from health.api.v1 import regions
 
 app = flask.Flask(__name__, static_folder=None)
 config_path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
@@ -34,7 +35,7 @@ def not_found(error):
     return flask.jsonify({"error": "Not Found"}), 404
 
 
-for bp in [health]:
+for bp in [health, regions]:
     for url_prefix, blueprint in bp.get_blueprints():
         app.register_blueprint(blueprint, url_prefix="/api/v1%s" % url_prefix)
 

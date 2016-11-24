@@ -13,15 +13,32 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
+import os.path
+
 import mock
 import testtools
 
+import health.main
 
-class TestCase(testtools.TestCase):
+
+class APITestCase(testtools.TestCase):
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super(APITestCase, self).setUp()
         self.addCleanup(mock.patch.stopall)
+        self.client = health.main.app.test_client()
+        self.app = health.main.app
 
-    def mock_request(self):
-        return mock.patch("requests.api.request").start()
+        config_path = os.path.join(
+            os.path.dirname(__file__), 'etc/config.json')
+        config = json.load(open(config_path))
+        self.app.config.update(config)
+
+        self.request = mock.patch("requests.api.request").start()
+
+    def test_not_found(self):
+        resp = self.client.get('/404')
+        self.assertEqual({"error": "Not Found"},
+                         json.loads(resp.data.decode()))
+        self.assertEqual(404, resp.status_code)
