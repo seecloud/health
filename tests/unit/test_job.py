@@ -33,7 +33,6 @@ class JobTestCase(test.TestCase):
         with open(TEST_CONFIG_PATH) as f:
             test_conf = json.load(f)
         mock.patch("health.job.CONF", test_conf).start()
-        self.request = self.mock_request()
 
         # ensure json.dumps produces predictable results
         self.old_dumps = json.dumps
@@ -44,12 +43,13 @@ class JobTestCase(test.TestCase):
         json.dumps = self.old_dumps
 
     @mock.patch("health.drivers.tcp.driver.main")
-    def test_job(self, mock_driver_main):
+    @mock.patch("requests.api.request")
+    def test_job(self, mock_request, mock_driver_main):
         mock_driver_main.return_value = [[{"fake1": "fake1"}],
                                          [],
                                          [{"fake2": "fake2"}]]
         main.job()
-        self.assertEqual(4, self.request.call_count)
+        self.assertEqual(4, mock_request.call_count)
         expected_calls = [
             mock.call("post",
                       "http://4.3.2.1:9200//ms_health/service/_bulk",
@@ -62,4 +62,4 @@ class JobTestCase(test.TestCase):
                            '{"fake2": "fake2", "region": "hooli-west-1"}',
                       json=None)
         ]
-        self.assertEqual(expected_calls, self.request.call_args_list[2:])
+        self.assertEqual(expected_calls, mock_request.call_args_list[2:])

@@ -32,19 +32,18 @@ class DistanceInDaysTestCase(test.TestCase):
 
 
 class GetMinMaxTimestampTestCase(test.TestCase):
-    def setUp(self):
-        super(GetMinMaxTimestampTestCase, self).setUp()
-        self.request = self.mock_request()
 
-    def test_zero_total_hits_of_min(self):
-        self.request.return_value.json.return_value = {"hits": {"total": 0}}
+    @mock.patch("requests.api.request")
+    def test_zero_total_hits_of_min(self, mock_request):
+        mock_request.return_value.json.return_value = {"hits": {"total": 0}}
         self.assertEqual([None, None],
                          utils.get_min_max_timestamps("fake-se", "fake-field"))
-        self.request.assert_called_once_with(
+        mock_request.assert_called_once_with(
             "get", "fake-se/_search?size=1", allow_redirects=True,
             data='{"sort": {"fake-field": {"order": "asc"}}}', params=None)
 
-    def test_non_zero_total_hits_of_min(self):
+    @mock.patch("requests.api.request")
+    def test_non_zero_total_hits_of_min(self, mock_request):
         r1 = mock.Mock()
         r1.json.return_value = {
             "hits": {
@@ -66,10 +65,10 @@ class GetMinMaxTimestampTestCase(test.TestCase):
                 }]
             }
         }
-        self.request.side_effect = [r1, r2]
+        mock_request.side_effect = [r1, r2]
         self.assertEqual(["fake-1", "fake-2"],
                          utils.get_min_max_timestamps("fake-se", "fake-field"))
-        self.assertEqual(2, self.request.call_count)
+        self.assertEqual(2, mock_request.call_count)
         calls = [mock.call("get", "fake-se/_search?size=1",
                            allow_redirects=True,
                            data='{"sort": {"fake-field": {"order": "asc"}}}',
@@ -78,7 +77,7 @@ class GetMinMaxTimestampTestCase(test.TestCase):
                            allow_redirects=True,
                            data='{"sort": {"fake-field": {"order": "desc"}}}',
                            params=None)]
-        self.request.assert_has_calls(calls)
+        mock_request.assert_has_calls(calls)
 
 
 class IncrementalScanTestCase(test.TestCase):

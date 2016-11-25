@@ -28,7 +28,7 @@ class RegionsTestCase(base.APITestCase):
         "openstack.glance",
     ]
 
-    def _mock_response(self):
+    def _mock_response(self, mock_request):
         service_buckets = []
         for serv in self.services:
             inner_bucket = {
@@ -63,13 +63,11 @@ class RegionsTestCase(base.APITestCase):
         }
         resp = mock.Mock()
         resp.json.return_value = response
-        self.request.side_effect = [resp]
+        mock_request.side_effect = [resp]
 
-    def setUp(self):
-        super(RegionsTestCase, self).setUp()
-        self._mock_response()
-
-    def test_get_health(self):
+    @mock.patch("requests.api.request")
+    def test_get_health(self, mock_request):
+        self._mock_response(mock_request)
 
         resp = self.client.get("/api/v1/health/")
         resp_json = json.loads(resp.data.decode())
@@ -77,7 +75,7 @@ class RegionsTestCase(base.APITestCase):
         self.assertEqual(set(self.services), set(resp_json["project_names"]))
         self.assertEqual(set(self.services), set(resp_json["projects"].keys()))
 
-        request_args, request_kwargs = self.request.call_args
+        request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
             ("get", self.app.config["backend"]["elastic"] + "/_search"),
             request_args)
@@ -92,12 +90,14 @@ class RegionsTestCase(base.APITestCase):
         self.assertEqual(expected_filter,
                          data_requested["query"]["bool"]["filter"])
 
-    def test_get_health_region(self):
+    @mock.patch("requests.api.request")
+    def test_get_health_region(self, mock_request):
+        self._mock_response(mock_request)
 
         resp = self.client.get("/api/v1/health/regionX")
         self.assertEqual(200, resp.status_code)
 
-        request_args, request_kwargs = self.request.call_args
+        request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
             ("get", self.app.config["backend"]["elastic"] + "/_search"),
             request_args)
@@ -114,12 +114,14 @@ class RegionsTestCase(base.APITestCase):
         self.assertEqual(expected_filter,
                          data_requested["query"]["bool"]["filter"])
 
-    def test_get_health_period(self):
+    @mock.patch("requests.api.request")
+    def test_get_health_period(self, mock_request):
+        self._mock_response(mock_request)
 
         resp = self.client.get("/api/v1/health/?period=year")
         self.assertEqual(200, resp.status_code)
 
-        request_args, request_kwargs = self.request.call_args
+        request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
             ("get", self.app.config["backend"]["elastic"] + "/_search"),
             request_args)

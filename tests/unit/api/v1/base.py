@@ -35,8 +35,6 @@ class APITestCase(testtools.TestCase):
         config = json.load(open(config_path))
         self.app.config.update(config)
 
-        self.request = mock.patch("requests.api.request").start()
-
     def test_not_found(self):
         resp = self.client.get('/404')
         self.assertEqual({"error": "Not Found"},
