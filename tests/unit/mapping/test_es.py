@@ -20,22 +20,21 @@ from tests.unit import test  # noqa
 
 
 class InitElasticTestCase(test.TestCase):
-    def setUp(self):
-        super(InitElasticTestCase, self).setUp()
-        self.request = self.mock_request()
 
-    def test_existing_index(self):
-        self.request.return_value.status_code = 200
-        self.request.return_value.ok = True
+    @mock.patch("requests.api.request")
+    def test_existing_index(self, mock_request):
+        mock_request.return_value.status_code = 200
+        mock_request.return_value.ok = True
         es.init_elastic("fake-es", "ms_health")
-        self.assertEqual(3, self.request.call_count)
+        self.assertEqual(3, mock_request.call_count)
         calls = [mock.call("get", "fake-es/ms_health",
                            allow_redirects=True, params=None)]
 
-        self.request.assert_has_calls(calls)
+        mock_request.assert_has_calls(calls)
 
-    def test_create_index(self):
-        self.request.side_effect = [
+    @mock.patch("requests.api.request")
+    def test_create_index(self, mock_request):
+        mock_request.side_effect = [
             mock.Mock(status_code=404, ok=False),
             mock.Mock(status_code=200, ok=True),
             mock.Mock(status_code=200, ok=True),
@@ -46,5 +45,5 @@ class InitElasticTestCase(test.TestCase):
                            params=None),
                  mock.call("put", "fake-es/fake-index", data=mock.ANY,)
                  ]
-        self.assertEqual(4, self.request.call_count)
-        self.request.assert_has_calls(calls)
+        self.assertEqual(4, mock_request.call_count)
+        mock_request.assert_has_calls(calls)

@@ -36,7 +36,8 @@ sample_response = {
 
 class RegionsTestCase(base.APITestCase):
 
-    def test_get_regions(self):
+    @mock.patch("requests.api.request")
+    def test_get_regions(self, mock_request):
         regions = ["regionOne", "regionTwo", "regionThree"]
 
         resp_json = sample_response
@@ -44,7 +45,7 @@ class RegionsTestCase(base.APITestCase):
             {"key": reg_name, "doc_count": 1} for reg_name in regions]
         resp = mock.Mock()
         resp.json.return_value = sample_response
-        self.request.side_effect = [resp]
+        mock_request.side_effect = [resp]
 
         resp = self.client.get("/api/v1/regions/")
         resp_json = json.loads(resp.data.decode())
