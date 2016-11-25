@@ -18,6 +18,7 @@ import logging
 
 import flask
 import requests
+from werkzeug.contrib import cache
 
 
 health = flask.Blueprint("health", __name__)
@@ -29,11 +30,18 @@ def get_blueprints():
     ]
 
 
+CACHE = cache.SimpleCache(threshold=50, default_timeout=30)
+
+
 @health.route("/", defaults={"region": "all"})
 @health.route("/<region>")
 def get_health(region):
 
     period = flask.request.args.get("period", "day")
+
+    result = CACHE.get("{}:{}".format(region, period))
+    if result is not None:
+        return flask.jsonify(**result)
 
     if period == "week":
         period = "now-7d/m"
@@ -131,5 +139,7 @@ def get_health(region):
             "response_time_data": convert_(project["data"], "response_time"),
             "response_size_data": convert_(project["data"], "response_size")
         }
+
+    CACHE.set("{}:{}".format(region, period), result)
 
     return flask.jsonify(**result)
