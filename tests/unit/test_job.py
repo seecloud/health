@@ -19,7 +19,7 @@ import os
 
 import mock
 
-from health import job as main
+from health import job
 import tests
 from tests.unit import test  # noqa
 
@@ -42,13 +42,13 @@ class JobTestCase(test.TestCase):
         super(JobTestCase, self).tearDown()
         json.dumps = self.old_dumps
 
-    @mock.patch("health.drivers.tcp.driver.main")
+    @mock.patch("health.drivers.tcp.driver.Driver.fetch")
     @mock.patch("requests.api.request")
-    def test_job(self, mock_request, mock_driver_main):
-        mock_driver_main.return_value = [[{"fake1": "fake1"}],
-                                         [],
-                                         [{"fake2": "fake2"}]]
-        main.job()
+    def test_job(self, mock_request, mock_driver_fetch):
+        mock_driver_fetch.return_value = [[{"fake1": "fake1"}],
+                                          [],
+                                          [{"fake2": "fake2"}]]
+        job.job()
         self.assertEqual(4, mock_request.call_count)
         expected_calls = [
             mock.call("post",

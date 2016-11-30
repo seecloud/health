@@ -86,7 +86,7 @@ CONF = None
 def _get_driver(driver_type):
     try:
         return importlib.import_module("." + driver_type + ".driver",
-                                       "health.drivers")
+                                       "health.drivers").Driver
     except ImportError:
         logging.error("Could not load driver for '{}'".format(driver_type))
         raise
@@ -101,9 +101,8 @@ def job():
     min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
 
     for src in CONF["sources"]:
-        driver = _get_driver(src["driver"]["type"])
-        data_generator = driver.main(src["driver"],
-                                     latest_aggregated_ts=max_ts)
+        driver = _get_driver(src["driver"]["type"])(src["driver"])
+        data_generator = driver.fetch(latest_aggregated_ts=max_ts)
 
         logging.info("Start syncing %s region" % src["region"])
 

@@ -21,66 +21,70 @@ import logging
 
 import requests
 
+from health.drivers import driver
 from health.drivers import utils
 
 
-STATS = {
-    "http_response_time_stats": {
-        "extended_stats": {
-            "field": "http_response_time"
-        }
-    },
-    "http_response_time_percentiles": {
-        "percentiles": {
-            "field": "http_response_time"
-        }
-    },
-    "http_response_size_stats": {
-        "extended_stats": {
-            "field": "http_response_size"
-        }
-    },
-    "http_response_size_percentiles": {
-        "percentiles": {
-            "field": "http_response_size"
+class Driver(driver.Base):
+
+    STATS = {
+        "http_response_time_stats": {
+            "extended_stats": {
+                "field": "http_response_time"
+            }
+        },
+        "http_response_time_percentiles": {
+            "percentiles": {
+                "field": "http_response_time"
+            }
+        },
+        "http_response_size_stats": {
+            "extended_stats": {
+                "field": "http_response_size"
+            }
+        },
+        "http_response_size_percentiles": {
+            "percentiles": {
+                "field": "http_response_size"
+            }
         }
     }
-}
 
 
-AGG_REQUEST = {
-    "size": 0,  # this is a count request
-    "query": {
-        "bool": {
-            "filter": [
-                {"exists": {"field": "http_method"}},
-                {"exists": {"field": "http_status"}},
-                {"exists": {"field": "http_response_time"}},
-            ]
-        }
-    },
-    "aggs": {
-        "per_minute": {
-            "date_histogram": {
-                "field": "Timestamp",
-                "interval": "minute",
-                "format": "yyyy-MM-dd'T'hh:mm:ss",
-                "min_doc_count": 0
-            },
-            "aggs": {
-                "http_codes": {
-                    "terms": {
-                        "field": "http_status"
-                    }
+    AGG_REQUEST = {
+        "size": 0,  # this is a count request
+        "query": {
+            "bool": {
+                "filter": [
+                    {"exists": {"field": "http_method"}},
+                    {"exists": {"field": "http_status"}},
+                    {"exists": {"field": "http_response_time"}},
+                ]
+            }
+        },
+        "aggs": {
+            "per_minute": {
+                "date_histogram": {
+                    "field": "Timestamp",
+                    "interval": "minute",
+                    "format": "yyyy-MM-dd'T'hh:mm:ss",
+                    "min_doc_count": 0
                 },
-                "services": {
-                    "terms": {
-                        "field": "Logger"
+                "aggs": {
+                    "http_codes": {
+                        "terms": {
+                            "field": "http_status"
+                        }
                     },
-                    "aggs": {
-                        "http_codes": {
-                            "terms": {
-                                "field": "http_status"
+                    "services": {
+                        "terms": {
+                            "field": "Logger"
+                        },
+                        "aggs": {
+                            "http_codes": {
+                                "terms": {
+                                    "field": "http_status"
+                                }
                             }
                         }
                     }
@@ -88,86 +92,81 @@ AGG_REQUEST = {
             }
         }
     }
-}
 
+    AGG_REQUEST["aggs"]["per_minute"]["aggs"].update(STATS)
+    AGG_REQUEST["aggs"]["per_minute"]["aggs"]["services"]["aggs"].update(STATS)
 
-AGG_REQUEST["aggs"]["per_minute"]["aggs"].update(STATS)
-AGG_REQUEST["aggs"]["per_minute"]["aggs"]["services"]["aggs"].update(STATS)
+    def get_request(self, ts_range):
+        query = copy.deepcopy(self.AGG_REQUEST)
+        query["query"]["bool"]["filter"].append({
+            "range": {"Timestamp": ts_range}
+        })
+        return query
 
+    def transform_http_codes(self, buckets):
+        result = {"1xx": 0, "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0}
 
-def get_request(ts_range):
-    query = copy.deepcopy(AGG_REQUEST)
-    query["query"]["bool"]["filter"].append({
-        "range": {"Timestamp": ts_range}
-    })
-    return query
+        for b in buckets:
+            result["%sxx" % (int(b["key"]) // 100)] = b["doc_count"]
+        return result
 
+    def fci(self, http_codes):
+        all_codes = sum(v for k, v in http_codes.items())
+        if all_codes:
+            return float((all_codes - http_codes["5xx"])) / all_codes
+        else:
+            return 1.0  # TODO(boris-42): Ignore this points.
 
-def transform_http_codes(buckets):
-    result = {"1xx": 0, "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0}
+    def record_from_bucket(self, bucket, timestamp, service):
+        http_codes = self.transform_http_codes(bucket["http_codes"]["buckets"])
+        record = {
+            "timestamp": timestamp,
+            "requests_count": bucket["doc_count"],
+            "service": service,
+            "fci": self.fci(http_codes),
+            "http_codes": http_codes,
+            "response_time": bucket["http_response_time_stats"],
+            "response_size": bucket["http_response_size_stats"]
+        }
 
-    for b in buckets:
-        result["%sxx" % (int(b["key"]) // 100)] = b["doc_count"]
-    return result
+        del record["response_time"]["sum_of_squares"]
+        del record["response_size"]["sum_of_squares"]
 
+        for el in ["response_time", "response_size"]:
+            for pth in ["50.0", "95.0", "99.0"]:
+                value = bucket["http_%s_percentiles" % el]["values"][pth]
+                record[el]["%sth" % pth[:-2]] = value
 
-def fci(http_codes):
-    all_codes = sum(v for k, v in http_codes.items())
-    if all_codes:
-        return float((all_codes - http_codes["5xx"])) / all_codes
-    else:
-        return 1.0  # TODO(boris-42): Ignore this points.
+        return record
 
+    def fetch(self, latest_aggregated_ts=None):
+        es = self.config["elastic_src"]
+        ts_min, ts_max = utils.get_min_max_timestamps(es, "Timestamp")
 
-def record_from_bucket(bucket, timestamp, service):
-    http_codes = transform_http_codes(bucket["http_codes"]["buckets"])
-    record = {
-        "timestamp": timestamp,
-        "requests_count": bucket["doc_count"],
-        "service": service,
-        "fci": fci(http_codes),
-        "http_codes": http_codes,
-        "response_time": bucket["http_response_time_stats"],
-        "response_size": bucket["http_response_size_stats"]
-    }
+        if latest_aggregated_ts:
+            intervals = utils.incremental_scan(ts_max, latest_aggregated_ts)
+        else:
+            intervals = utils.incremental_scan(ts_max, ts_min)
 
-    del record["response_time"]["sum_of_squares"]
-    del record["response_size"]["sum_of_squares"]
+        for interval in intervals:
+            body = self.get_request(interval)
+            resp = requests.post("%s/_search" % es,
+                                 data=json.dumps(body))
 
-    for el in ["response_time", "response_size"]:
-        for pth in ["50.0", "95.0", "99.0"]:
-            value = bucket["http_%s_percentiles" % el]["values"][pth]
-            record[el]["%sth" % pth[:-2]] = value
+            if not resp.ok:
+                logging.error(
+                    "Got a non-ok response for interval {}\n{}".format(
+                        interval, resp.text))
+                continue
+            resp = resp.json()
 
-    return record
+            r = []
+            for bucket in resp["aggregations"]["per_minute"]["buckets"]:
 
+                ts = bucket["key_as_string"]
+                r.append(self.record_from_bucket(bucket, ts, "all"))
 
-def main(config, latest_aggregated_ts=None):
-    es = config["elastic_src"]
-    ts_min, ts_max = utils.get_min_max_timestamps(es, "Timestamp")
-
-    if latest_aggregated_ts:
-        intervals = utils.incremental_scan(ts_max, latest_aggregated_ts)
-    else:
-        intervals = utils.incremental_scan(ts_max, ts_min)
-
-    for interval in intervals:
-        body = get_request(interval)
-        resp = requests.post("%s/_search" % es,
-                             data=json.dumps(body))
-
-        if not resp.ok:
-            logging.error("Got a non-ok response for interval {}\n{}".format(
-                interval, resp.text))
-            continue
-        resp = resp.json()
-
-        r = []
-        for bucket in resp["aggregations"]["per_minute"]["buckets"]:
-
-            ts = bucket["key_as_string"]
-            r.append(record_from_bucket(bucket, ts, "all"))
-
-            for service in bucket["services"]["buckets"]:
-                r.append(record_from_bucket(service, ts, service["key"]))
-        yield r
+                for service in bucket["services"]["buckets"]:
+                    r.append(
+                        self.record_from_bucket(service, ts, service["key"]))
+            yield r
