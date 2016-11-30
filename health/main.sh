@@ -1,15 +1,11 @@
 #!/bin/bash
 
-LOG=/var/log/health
-
-touch $LOG
-
 if [ ! -z "$RUN_HEALTH_JOB" ]; then
-    python job.py >> $LOG &
+    health-job &
 fi
 
-if [ ! -z "$RUN_HEALT_API" ]; then
-    gunicorn -w 4 -b 0.0.0.0:5000 main:app >> $LOG &
+if [ ! -z "$RUN_HEALTH_API" ]; then
+    gunicorn -w 4 -b 0.0.0.0:5000 health.main:app &
 fi
 
-tail -f $LOG
+wait -n
