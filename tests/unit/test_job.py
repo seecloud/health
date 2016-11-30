@@ -42,6 +42,15 @@ class JobTestCase(test.TestCase):
         super(JobTestCase, self).tearDown()
         json.dumps = self.old_dumps
 
+    def test_exceptions_decorator(self):
+        self.assertTrue(job.ignore_exceptions(lambda: True)())
+
+        @job.ignore_exceptions
+        def raisesException():
+            raise ValueError
+
+        self.assertIsNone(raisesException())
+
     @mock.patch("health.drivers.tcp.driver.Driver.fetch")
     @mock.patch("requests.api.request")
     def test_job(self, mock_request, mock_driver_fetch):
