@@ -37,9 +37,11 @@ def get_min_max_timestamps(es, field):
         url, data=json.dumps({"sort": {field: {"order": "asc"}}}))
 
     if not r_min.ok:
-        logging.error("Got {} status when requesting {}: {}".format(
-            r_min.status_code, url, r_min.text))
+        logging.error("Got {} status when requesting {}, "
+                      "assuming empty intervals. {}".format(
+                          r_min.status_code, url, r_min.text))
         return [None, None]
+
     if r_min.json()["hits"]["total"] == 0:
         return [None, None]
 

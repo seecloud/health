@@ -102,7 +102,11 @@ class Driver(driver.Base):
 
         if self.use_keyword is None:
             es = self.config["elastic_src"]
-            mappings = requests.get(es.rstrip("/").rsplit("/", 1)[0]).json()
+            resp = requests.get(es.rstrip("/").rsplit("/", 1)[0])
+            # if there was a 4xx/5xx response: raise it
+            resp.raise_for_status()
+
+            mappings = resp.json()
             mappings = mappings[list(mappings.keys())[0]]["mappings"]
             props = mappings[list(mappings.keys())[0]]["properties"]
             self.use_keyword = "keyword" in props["Logger"].get("fields", {})
@@ -159,6 +163,11 @@ class Driver(driver.Base):
         es = self.config["elastic_src"]
         ts_min, ts_max = utils.get_min_max_timestamps(es, "Timestamp")
 
+        if ts_min is ts_max is None:
+            logging.error("Got no timestamps from source es,"
+                          " will skip fetching data for {}".format(es))
+            return
+
         if latest_aggregated_ts:
             intervals = utils.incremental_scan(ts_max, latest_aggregated_ts)
         else:
@@ -166,8 +175,13 @@ class Driver(driver.Base):
 
         for interval in intervals:
             body = self.get_request(interval)
-            resp = requests.post("%s/_search" % es,
-                                 data=json.dumps(body))
+            try:
+                resp = requests.post("%s/_search" % es,
+                                     data=json.dumps(body))
+            except requests.exceptions.RequestException as e:
+                logging.error(
+                    "Was unable to make a request for interval {}\n{}".format(
+                        interval, e))
 
             if not resp.ok:
                 logging.error(

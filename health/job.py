@@ -92,6 +92,17 @@ def _get_driver(driver_type):
         raise
 
 
+def ignore_exceptions(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logging.error("Caught {} while running '{}' function".format(
+                e, func.__name__))
+    return wrapper
+
+
+@ignore_exceptions
 def job():
     started_at = time.time()
     logging.info("Starting Syncing Job")
@@ -123,8 +134,14 @@ def job():
             req_data = "\n".join(req_data)
             logging.info("Sending data chunk {} to elastic".format(i))
 
-            r = requests.post("%s/_bulk" % backend_url, data=req_data)
-            logging.debug(r.json())
+            try:
+                r = requests.post("%s/_bulk" % backend_url, data=req_data)
+            except requests.exceptions.RequestException:
+                logging.error("Was unable to store data for {} "
+                              "Stopping current job run".format(
+                                  data_interval))
+                break
+            logging.debug(r.text)
 
         logging.info("Syncing Job: Completed in %.3f seconds"
                      % (time.time() - started_at))
