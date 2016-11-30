@@ -50,7 +50,6 @@ class Driver(driver.Base):
         }
     }
 
-
     AGG_REQUEST = {
         "size": 0,  # this is a count request
         "query": {
@@ -96,8 +95,25 @@ class Driver(driver.Base):
     AGG_REQUEST["aggs"]["per_minute"]["aggs"].update(STATS)
     AGG_REQUEST["aggs"]["per_minute"]["aggs"]["services"]["aggs"].update(STATS)
 
+    use_keyword = None
+
     def get_request(self, ts_range):
         query = copy.deepcopy(self.AGG_REQUEST)
+
+        if self.use_keyword is None:
+            es = self.config["elastic_src"]
+            mappings = requests.get(es.rstrip("/").rsplit("/", 1)[0]).json()
+            mappings = mappings[list(mappings.keys())[0]]["mappings"]
+            props = mappings[list(mappings.keys())[0]]["properties"]
+            self.use_keyword = "keyword" in props["Logger"].get("fields", {})
+
+        if self.use_keyword:
+            base = query["aggs"]["per_minute"]["aggs"]
+            base["http_codes"]["terms"]["field"] += ".keyword"
+            base["services"]["terms"]["field"] += ".keyword"
+            base["services"]["aggs"]["http_codes"]["terms"][
+                "field"] += ".keyword"
+
         query["query"]["bool"]["filter"].append({
             "range": {"Timestamp": ts_range}
         })
