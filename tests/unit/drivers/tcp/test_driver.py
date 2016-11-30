@@ -21,6 +21,7 @@ from health.drivers.tcp import driver
 from health.drivers import utils
 from tests.unit import test  # noqa
 
+
 TEST_BUCKET = {
     "http_codes": {
         "buckets": [
@@ -43,6 +44,8 @@ TEST_BUCKET = {
     "key": "fake-service",
     "services": {"buckets": []}
 }
+
+
 TEST_EXPECTED_RECORD = {
     "fci": 10.0 / 15.0,
     "http_codes": {"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5},
@@ -54,48 +57,42 @@ TEST_EXPECTED_RECORD = {
 }
 
 
-class GetRequestTestCase(test.TestCase):
-    def test_range_in_filters(self):
+class DriverTestCase(test.TestCase):
+
+    def setUp(self):
+        super(DriverTestCase, self).setUp()
+        self.driver = driver.Driver({"elastic_src": "elastic"})
+
+    def test_get_request_range_in_filters(self):
         self.assertIn(
             {"range": {"Timestamp": "fake-range"}},
-            driver.get_request("fake-range")["query"]["bool"]["filter"])
+            self.driver.get_request("fake-range")["query"]["bool"]["filter"])
 
 
-class TransformHTTPCodesTestCase(test.TestCase):
-    def test_transform(self):
+    def test_transform_http_codes(self):
         buckets = [{"key": 123, "doc_count": 1},
                    {"key": 234, "doc_count": 2},
                    {"key": 345, "doc_count": 3},
                    {"key": 456, "doc_count": 4},
                    {"key": 567, "doc_count": 5}]
         self.assertEqual({"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5},
-                         driver.transform_http_codes(buckets))
-
-
-class FCITestCase(test.TestCase):
-    def test_no_codes(self):
-        self.assertEqual(1.0, driver.fci({}))
+                         self.driver.transform_http_codes(buckets))
 
     def test_fci(self):
         http_codes = {"1xx": 1, "2xx": 2, "3xx": 3, "4xx": 4, "5xx": 5}
-        self.assertEqual(10.0 / 15.0, driver.fci(http_codes))
+        self.assertEqual(10.0 / 15.0, self.driver.fci(http_codes))
 
+    def test_fci_no_codes(self):
+        self.assertEqual(1.0, self.driver.fci({}))
 
-class RecordFromBucketTestCase(test.TestCase):
-    def test_make_record(self):
+    def test_record_from_bucket(self):
         bucket = copy.deepcopy(TEST_BUCKET)
         ts = bucket["key_as_string"]
         self.assertEqual(TEST_EXPECTED_RECORD,
-                         driver.record_from_bucket(bucket, ts,
-                                                   "fake-service"))
+                         self.driver.record_from_bucket(bucket, ts,
+                                                        "fake-service"))
 
-
-class MainTestCase(test.TestCase):
-    def setUp(self):
-        super(MainTestCase, self).setUp()
-        self.request = self.mock_request()
-
-    def prepare(self, latest_aggregated_ts=None):
+    def _prepare(self, mock_request, latest_aggregated_ts=None):
         ts1 = latest_aggregated_ts or "2000-01-01T01:01:01"
         ts2 = "2000-01-09T01:01:01"
         days = utils.distance_in_days(ts1, ts2)
@@ -154,15 +151,16 @@ class MainTestCase(test.TestCase):
             resp.json.return_value = {"aggregations": {"per_minute": {
                 "buckets": buckets}}}
             responses.append(resp)
-        self.request.side_effect = responses
+        mock_request.side_effect = responses
         return expected_results, len(responses)
 
-    def test_main(self, aggregated_ts=None):
-        expected_results, expected_call_count = self.prepare(aggregated_ts)
-        for i, res in enumerate(driver.main({"elastic_src": "fake-es"},
-                                            aggregated_ts)):
+    @mock.patch("requests.api.request")
+    def test_fetch(self, mock_request, aggregated_ts=None):
+        expected_results, expected_call_count = self._prepare(
+            mock_request, aggregated_ts)
+        for i, res in enumerate(self.driver.fetch(aggregated_ts)):
             self.assertEqual(expected_results[i], res)
-        self.assertEqual(expected_call_count, self.request.call_count)
+        self.assertEqual(expected_call_count, mock_request.call_count)
 
-    def test_main_with_latest_aggregated_ts(self):
-        self.test_main("2000-01-05T01:01:01")
+    def test_fetch_with_latest_aggregated_ts(self):
+        self.test_fetch(aggregated_ts="2000-01-05T01:01:01")
