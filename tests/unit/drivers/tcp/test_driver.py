@@ -61,13 +61,50 @@ class DriverTestCase(test.TestCase):
 
     def setUp(self):
         super(DriverTestCase, self).setUp()
-        self.driver = driver.Driver({"elastic_src": "elastic"})
+        self.driver = driver.Driver({
+            "elastic_src": "http://elastic:9200/log*/log"})
 
-    def test_get_request_range_in_filters(self):
+    @mock.patch("health.drivers.tcp.driver.requests.get")
+    def test_get_request(self, mock_requests_get):
+        self.driver.use_keyword = False
         self.assertIn(
             {"range": {"Timestamp": "fake-range"}},
             self.driver.get_request("fake-range")["query"]["bool"]["filter"])
+        self.assertEqual(mock_requests_get.call_count, 0)
 
+    @mock.patch("health.drivers.tcp.driver.requests.get")
+    def test_get_request_use_keyword(self, mock_requests_get):
+        mock_requests_get.return_value.json.return_value = {
+            "index_name": {
+                "mappings": {
+                    "aaa": {
+                        "properties": {
+                            "Logger": {"fields": {"keyword": {}}}
+                        }
+                    }
+                }
+            }
+        }
+        self.driver.get_request("fake-range")
+        self.assertTrue(self.driver.use_keyword)
+        mock_requests_get.assert_called_once_with("http://elastic:9200/log*")
+
+    @mock.patch("health.drivers.tcp.driver.requests.get")
+    def test_get_request_dont_use_keyword(self, mock_requests_get):
+        mock_requests_get.return_value.json.return_value = {
+            "index_name": {
+                "mappings": {
+                    "aaa": {
+                        "properties": {
+                            "Logger": {"type": "text"}
+                        }
+                    }
+                }
+            }
+        }
+        self.driver.get_request("fake-range")
+        self.assertFalse(self.driver.use_keyword)
+        mock_requests_get.assert_called_once_with("http://elastic:9200/log*")
 
     def test_transform_http_codes(self):
         buckets = [{"key": 123, "doc_count": 1},
@@ -156,6 +193,7 @@ class DriverTestCase(test.TestCase):
 
     @mock.patch("requests.api.request")
     def test_fetch(self, mock_request, aggregated_ts=None):
+        self.driver.use_keyword = False
         expected_results, expected_call_count = self._prepare(
             mock_request, aggregated_ts)
         for i, res in enumerate(self.driver.fetch(aggregated_ts)):
