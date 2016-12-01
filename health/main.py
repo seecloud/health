@@ -10,24 +10,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-import logging
-import os
-
 import flask
 from flask_helpers import routing  # noqa
 
 from health.api.v1 import health
 from health.api.v1 import regions
+from health import config
+
+
+CONF = config.get_config()
+APP_CONF = CONF["flask"]
+
 
 app = flask.Flask(__name__, static_folder=None)
-config_path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
-
-try:
-    config = json.load(open(config_path))
-    app.config.update(config)
-except IOError as e:
-    logging.warning("Config at '%s': %s" % (config_path, e))
+app.config.update(APP_CONF)
 
 
 @app.errorhandler(404)
@@ -44,8 +40,8 @@ app = routing.add_routing_map(app, html_uri=None, json_uri="/api/v1")
 
 
 def main():
-    app.run(host=app.config.get("HOST", "0.0.0.0"),
-            port=app.config.get("PORT", 5000))
+    app.run(host=APP_CONF["HOST"],
+            port=APP_CONF["PORT"])
 
 
 if __name__ == "__main__":
