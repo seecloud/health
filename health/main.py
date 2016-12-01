@@ -10,36 +10,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-import logging
-import os
-
 import flask
 from flask_helpers import routing  # noqa
 
 from health.api.v1 import health
 from health.api.v1 import regions
+from health import config
 
 
-CONF = None
-DEFAULT_CONF = {
-    "flask": {
-        "PORT": 5000,
-        "HOST": "0.0.0.0",
-        "DEBUG": True
-    }
-}
-
-
-if not CONF:
-    path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
-    try:
-        CONF = json.load(open(path))
-        logging.info("Config is '%s'" % path)
-    except IOError as e:
-        logging.warning("Config at '%s': %s" % (path, e))
-        CONF = DEFAULT_CONF
-
+CONF = config.get_config()
 APP_CONF = CONF["flask"]
 
 
