@@ -16,6 +16,9 @@
 import json
 import logging
 import os
+import sys
+
+import jsonschema
 
 
 CONF = None
@@ -30,17 +33,66 @@ DEFAULT_CONF = {
             "region": "region",
             "driver": {
                 "type": "tcp",
-                "elastic_src": "http://1.1.1.1:9200/log-*/log"
+                "elastic_src": "http://127.0.0.1:9200/log-*/log"
             }
         }
     ],
     "backend": {
-        "elastic": "http://1.1.1.1:9200/",
+        "elastic": "http://127.0.0.1:9200/",
         "elastic_index": "ms_health_idx_1"
     },
     "config": {
         "run_every_minutes": 2
     }
+}
+
+CONF_SCHEMA = {
+    "type": "object",
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "properties": {
+        "flask": {
+            "type": "object"
+        },
+        "sources": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "region": {
+                        "type": "string"
+                    },
+                    "driver": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string"},
+                            "elastic_src": {"type": "string"}
+                        },
+                        "required": ["type", "elastic_src"]
+                    }
+                },
+                "required": ["region", "driver"]
+            }
+        },
+        "backend": {
+            "type": "object",
+            "properties": {
+                "elastic": {
+                    "type": "string"
+                }
+            },
+            "required": ["elastic"]
+        },
+        "config": {
+            "type": "object",
+            "properties": {
+                "run_every_minutes": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        }
+    },
+    "additionalProperties": False
 }
 
 
@@ -59,4 +111,13 @@ def get_config():
         except IOError as e:
             logging.warning("Config at '%s': %s" % (path, e))
             CONF = DEFAULT_CONF
-    return CONF
+    try:
+        jsonschema.validate(CONF, CONF_SCHEMA)
+    except jsonschema.ValidationError as e:
+        logging.error(e.message)
+        sys.exit(1)
+    except jsonschema.SchemaError as e:
+        logging.error(e)
+        sys.exit(1)
+    else:
+        return CONF

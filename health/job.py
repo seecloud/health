@@ -16,10 +16,8 @@
 import importlib
 import json
 import logging
-import sys
 import time
 
-import jsonschema
 import requests
 import schedule
 
@@ -30,55 +28,6 @@ from health.mapping import es
 
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
-
-CONF_SCHEMA = {
-    "type": "object",
-    "$schema": "http://json-schema.org/draft-04/schema",
-    "properties": {
-        "flask": {
-            "type": "object"
-        },
-        "sources": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "region": {
-                        "type": "string"
-                    },
-                    "driver": {
-                        "type": "object",
-                        "properties": {
-                            "type": {"type": "string"},
-                            "elastic_src": {"type": "string"}
-                        },
-                        "required": ["type", "elastic_src"]
-                    }
-                },
-                "required": ["region", "driver"]
-            }
-        },
-        "backend": {
-            "type": "object",
-            "properties": {
-                "elastic": {
-                    "type": "string"
-                }
-            },
-            "required": ["elastic"]
-        },
-        "config": {
-            "type": "object",
-            "properties": {
-                "run_every_minutes": {
-                    "type": "integer",
-                    "minimum": 1
-                }
-            }
-        }
-    },
-    "additionalProperties": False
-}
 
 
 CONF = None
@@ -134,27 +83,18 @@ def job():
 def main():
     global CONF
     CONF = config.get_config()
-    try:
-        jsonschema.validate(CONF, CONF_SCHEMA)
-    except jsonschema.ValidationError as e:
-        logging.error(e.message)
-        sys.exit(1)
-    except jsonschema.SchemaError as e:
-        logging.error(e)
-        sys.exit(1)
-    else:
-        # Init Elastic index in backend
-        es.init_elastic(CONF["backend"]["elastic"])
+    # Init Elastic index in backend
+    es.init_elastic(CONF["backend"]["elastic"])
 
-        # Setup periodic job that does aggregation magic
-        run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
-        schedule.every(run_every_min).minutes.do(job)
+    # Setup periodic job that does aggregation magic
+    run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
+    schedule.every(run_every_min).minutes.do(job)
 
-        job()
+    job()
 
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 
 if __name__ == "__main__":
