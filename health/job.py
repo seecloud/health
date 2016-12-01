@@ -18,12 +18,12 @@ import json
 import logging
 import sys
 import time
-import traceback
 
 import jsonschema
 import requests
 import schedule
 
+from health import config
 from health.drivers import utils
 from health.mapping import es
 
@@ -31,12 +31,13 @@ from health.mapping import es
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
-
-CONF_PATH = "/etc/health/config.json"
 CONF_SCHEMA = {
     "type": "object",
     "$schema": "http://json-schema.org/draft-04/schema",
     "properties": {
+        "flask": {
+            "type": "object"
+        },
         "sources": {
             "type": "array",
             "items": {
@@ -132,16 +133,9 @@ def job():
 
 def main():
     global CONF
+    CONF = config.get_config()
     try:
-        with open(CONF_PATH) as f:
-            CONF = json.load(f)
-            jsonschema.validate(CONF, CONF_SCHEMA)
-
-    except (OSError, IOError):
-        logging.error("Sorry, couldn't open configuration file: {}".format(
-            CONF_PATH))
-        traceback.print_exc()
-        sys.exit(1)
+        jsonschema.validate(CONF, CONF_SCHEMA)
     except jsonschema.ValidationError as e:
         logging.error(e.message)
         sys.exit(1)

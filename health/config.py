@@ -24,6 +24,22 @@ DEFAULT_CONF = {
         "HOST": "0.0.0.0",
         "PORT": 5000,
         "DEBUG": False
+    },
+    "sources": [
+        {
+            "region": "region",
+            "driver": {
+                "type": "tcp",
+                "elastic_src": "http://1.1.1.1:9200/log-*/log"
+            }
+        }
+    ],
+    "backend": {
+        "elastic": "http://1.1.1.1:9200/",
+        "elastic_index": "ms_health_idx_1"
+    },
+    "config": {
+        "run_every_minutes": 2
     }
 }
 
