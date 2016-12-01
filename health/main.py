@@ -20,15 +20,31 @@ from flask_helpers import routing  # noqa
 from health.api.v1 import health
 from health.api.v1 import regions
 
+
+CONF = None
+DEFAULT_CONF = {
+    "flask": {
+        "PORT": 5000,
+        "HOST": "0.0.0.0",
+        "DEBUG": true
+    }
+}
+
+
+if not CONF:
+    path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
+    try:
+        CONF = json.load(open(path))
+        logging.info("Config is '%s'" % path)
+    except IOError as e:
+        logging.warning("Config at '%s': %s" % (config_path, e))
+        CONF = DEFAULT_CONF
+
+APP_CONF = CONF["flask"]
+
+
 app = flask.Flask(__name__, static_folder=None)
-config_path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
-
-try:
-    config = json.load(open(config_path))
-    app.config.update(config)
-except IOError as e:
-    logging.warning("Config at '%s': %s" % (config_path, e))
-
+app.config.update(APP_CONF)
 
 @app.errorhandler(404)
 def not_found(error):
@@ -44,8 +60,8 @@ app = routing.add_routing_map(app, html_uri=None, json_uri="/api/v1")
 
 
 def main():
-    app.run(host=app.config.get("HOST", "0.0.0.0"),
-            port=app.config.get("PORT", 5000))
+    app.run(host=APP_CONF["HOST"],
+            port=APP_CONF["PORT"])
 
 
 if __name__ == "__main__":
