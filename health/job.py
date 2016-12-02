@@ -57,11 +57,10 @@ def job():
         logging.info("Start syncing %s region" % src["region"])
 
         for i, data_interval in enumerate(data_generator):
-            logging.info("Start syncing %s region" % src["region"])
 
             if not data_interval:
-                logging.info("Fetched data from %s region, chunk %s"
-                             % (src["region"], i))
+                logging.info("Chunk %s from region %s is already synced."
+                             % (i, src["region"]))
                 continue
 
             req_data = []
@@ -71,13 +70,13 @@ def job():
                 req_data.append('{"index": {}}')
                 req_data.append(json.dumps(d))
             req_data = "\n".join(req_data)
-            logging.info("Sending data chunk {} to elastic".format(i))
+            logging.info("Sending data from chunk {} to backend".format(i))
 
             r = requests.post("%s/_bulk" % backend_url, data=req_data)
             logging.debug(r.json())
 
-        logging.info("Syncing Job: Completed in %.3f seconds"
-                     % (time.time() - started_at))
+    logging.info("Syncing job completed in %.3f seconds"
+                 % (time.time() - started_at))
 
 
 def main():

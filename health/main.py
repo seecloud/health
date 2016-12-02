@@ -13,13 +13,13 @@
 import flask
 from flask_helpers import routing  # noqa
 
-from health.api.v1 import health
+from health.api.v1 import health_
 from health.api.v1 import regions
 from health import config
 
 
 CONF = config.get_config()
-APP_CONF = CONF["flask"]
+APP_CONF = CONF.get("flask", {})
 
 
 app = flask.Flask(__name__, static_folder=None)
@@ -31,7 +31,7 @@ def not_found(error):
     return flask.jsonify({"error": "Not Found"}), 404
 
 
-for bp in [health, regions]:
+for bp in [health_, regions]:
     for url_prefix, blueprint in bp.get_blueprints():
         app.register_blueprint(blueprint, url_prefix="/api/v1%s" % url_prefix)
 
@@ -40,8 +40,8 @@ app = routing.add_routing_map(app, html_uri=None, json_uri="/api/v1")
 
 
 def main():
-    app.run(host=APP_CONF["HOST"],
-            port=APP_CONF["PORT"])
+    app.run(host=APP_CONF.get("HOST", "0.0.0.0"),
+            port=APP_CONF.get("PORT", "5000"))
 
 
 if __name__ == "__main__":
