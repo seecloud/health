@@ -1,0 +1,23 @@
+{
+    "flask": {
+        "HOST": "0.0.0.0",
+        "PORT": {{ health.port.cont }},
+        "DEBUG": {% if health.debug %}true{% else %}false{% endif %}
+    },
+    "sources": [
+        {
+            "region": "hooli-west-1",
+            "driver": {
+                "type": "tcp",
+                "elastic_src": "http://1.2.3.4:9200/log-*/log"
+            }
+        }
+    ],
+    "backend": {
+        "elastic": "{{ health.backend.elastic}}",
+        "elastic_index": "{{ health.backend.elastic_index }}"
+    },
+    "config": {
+        "run_every_minutes": 2
+    }
+}

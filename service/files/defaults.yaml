@@ -1,0 +1,17 @@
+configs:
+  health:
+    port:
+      cont: 5000
+    debug: true
+
+    wsgi:
+      workers: 4
+
+    backend:
+      elastic: "http://127.0.0.1:9200"
+      elastic_index: "ms_health_idx_1"
+
+sources:
+  seecloud/health:
+    git_url: http://github.com/seecloud/health
+    git_ref: master
