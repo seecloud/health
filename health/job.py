@@ -60,7 +60,7 @@ def job():
 
             if not data_interval:
                 logging.info("Chunk %s from region %s is already synced."
-                             % (i,src["region"]))
+                             % (i, src["region"]))
                 continue
 
             req_data = []
