@@ -1,0 +1,12 @@
+FROM {{ image_spec("base-tools") }}
+MAINTAINER {{ maintainer }}
+
+{{ copy_sources("seecloud/health", "/health") }}
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends git-core \
+    && apt-get clean
+
+RUN pip install /health
+
+WORKDIR /health/health

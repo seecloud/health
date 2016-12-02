@@ -1,0 +1,23 @@
+dsl_version: 0.1.0
+service:
+  name: health-job
+  ports:
+    - {{ health.port }}
+  containers:
+    - name: health-job
+      image: health
+      probes:
+        readiness: "true"
+        liveness:
+          command: "true"
+          type: "exec"
+      daemon:
+        command:
+          python job.py
+        files:
+          - health.conf
+
+files:
+  health.conf:
+    path: /etc/health/config.json
+    content: health.json.j2

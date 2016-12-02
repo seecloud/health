@@ -1,0 +1,24 @@
+configs:
+  health:
+    port:
+      cont: 5000
+    debug: true
+
+    wsgi:
+      workers: 4
+
+    sources:
+      - region: "hooli-west-1"
+        elastic_src: "http://127.0.0.1:9200/log-*/log"
+
+    backend:
+      elastic: "http://127.0.0.1:9200"
+      elastic_index: "ms_health_idx_1"
+
+    job:
+      frequency: 2
+
+sources:
+  seecloud/health:
+    git_url: http://github.com/seecloud/health
+    git_ref: master

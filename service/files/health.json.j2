@@ -1,0 +1,26 @@
+{
+    "flask": {
+        "HOST": "0.0.0.0",
+        "PORT": {{ health.port.cont }},
+        "DEBUG": {% if health.debug %}true{% else %}false{% endif %}
+    },
+    "sources": [
+    {%- for source in health.sources %}
+        {
+            "region": "{{ source.region }}",
+            "driver": {
+                "type": "tcp",
+                "elastic_src": "{{ source.elastic_src }}"
+            }
+        }
+        {%- if loop.length > 1 and not loop.last %},{% endif -%}
+    {%- endfor %}
+    ],
+    "backend": {
+        "elastic": "{{ health.backend.elastic }}",
+        "elastic_index": "{{ health.backend.elastic_index }}"
+    },
+    "config": {
+        "run_every_minutes": {{ health.job.frequency }}
+    }
+}

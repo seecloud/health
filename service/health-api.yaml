@@ -1,0 +1,26 @@
+dsl_version: 0.1.0
+service:
+  name: health-api
+  ports:
+    - {{ health.port }}
+  containers:
+    - name: health-api
+      image: health
+      probes:
+        readiness:
+          type: "httpGet"
+          port: {{ health.port.cont }}
+          path: "/api/v1"
+        liveness:
+          command: "true"
+          type: "exec"
+      daemon:
+        command:
+          gunicorn -w {{ health.wsgi.workers }} -b 0.0.0.0:{{ health.port.cont }} main:app
+        files:
+          - health.conf
+
+files:
+  health.conf:
+    path: /etc/health/config.json
+    content: health.json.j2
