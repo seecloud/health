@@ -29,7 +29,9 @@ class RegionsTestCase(base.APITestCase):
         "openstack.glance",
     ]
 
-    def _mock_response(self, mock_request):
+    def _mock_response(self, mock_request, buckets=None, aggs_name="projects"):
+        if buckets is None:
+            buckets = self.services
         service_buckets = []
         for serv in self.services:
             inner_bucket = {
@@ -52,7 +54,7 @@ class RegionsTestCase(base.APITestCase):
 
         response = {
             "aggregations": {
-                "projects": {
+                aggs_name: {
                     "buckets": service_buckets,
                     "doc_count_error_upper_bound": 0,
                     "sum_other_doc_count": 0
@@ -70,7 +72,7 @@ class RegionsTestCase(base.APITestCase):
     def test_get_health(self, mock_request):
         self._mock_response(mock_request)
 
-        resp = self.client.get("/api/v1/health/")
+        resp = self.client.get("/api/v1/region/regionOne/health")
         resp_json = json.loads(resp.data.decode())
         self.assertEqual(200, resp.status_code)
         self.assertEqual(set(self.services), set(resp_json["project_names"]))
@@ -87,30 +89,8 @@ class RegionsTestCase(base.APITestCase):
                     "gte": "now-1d/m"
                 }
             }
-        }]
-        self.assertEqual(expected_filter,
-                         data_requested["query"]["bool"]["filter"])
-
-    @mock.patch("requests.api.request")
-    def test_get_health_region(self, mock_request):
-        self._mock_response(mock_request)
-
-        resp = self.client.get("/api/v1/health/regionX")
-        self.assertEqual(200, resp.status_code)
-
-        request_args, request_kwargs = mock_request.call_args
-        self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
-            request_args)
-        data_requested = json.loads(request_kwargs["data"])
-        expected_filter = [{
-            "range": {
-                "timestamp": {
-                    "gte": "now-1d/m"
-                }
-            }
         }, {
-            "match": {"region": "regionX"}
+            "match": {"region": "regionOne"}
         }]
         self.assertEqual(expected_filter,
                          data_requested["query"]["bool"]["filter"])
@@ -119,7 +99,7 @@ class RegionsTestCase(base.APITestCase):
     def test_get_health_period(self, mock_request):
         self._mock_response(mock_request)
 
-        resp = self.client.get("/api/v1/health/?period=year")
+        resp = self.client.get("/api/v1/region/regionOne/health/year")
         self.assertEqual(200, resp.status_code)
 
         request_args, request_kwargs = mock_request.call_args
@@ -131,6 +111,35 @@ class RegionsTestCase(base.APITestCase):
             "range": {
                 "timestamp": {
                     "gte": "now-365d/m"
+                }
+            }
+        }, {
+            "match": {"region": "regionOne"}
+        }]
+        self.assertEqual(expected_filter,
+                         data_requested["query"]["bool"]["filter"])
+
+    @mock.patch("requests.api.request")
+    def test_get_health_all_regions(self, mock_request):
+        self._mock_response(mock_request,
+                            buckets=["regOne", "regTwo"], aggs_name="regions")
+
+        resp = self.client.get("/api/v1/health")
+        self.assertEqual(200, resp.status_code)
+
+        resp_json = json.loads(resp.data.decode())
+        self.assertEqual(set(self.services), set(resp_json["region_names"]))
+        self.assertEqual(set(self.services), set(resp_json["regions"].keys()))
+
+        request_args, request_kwargs = mock_request.call_args
+        self.assertEqual(
+            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
+            request_args)
+        data_requested = json.loads(request_kwargs["data"])
+        expected_filter = [{
+            "range": {
+                "timestamp": {
+                    "gte": "now-1d/m"
                 }
             }
         }]
