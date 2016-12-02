@@ -26,16 +26,18 @@ health = flask.Blueprint("health", __name__)
 
 def get_blueprints():
     return [
-        ["/health", health],
+        ["", health],
     ]
 
 
-@health.route("/", defaults={"region": "all"})
-@health.route("/<region>")
-def get_health(region):
+def convert(data, field):
+    result = []
+    for d in data["buckets"]:
+        result.append([d["key_as_string"], d[field]["value"]])
+    return result
 
-    period = flask.request.args.get("period", "day")
 
+def get_period_interval(period):
     if period == "week":
         period = "now-7d/m"
         interval = "1h"
@@ -49,6 +51,10 @@ def get_health(region):
         # assuming day
         period = "now-1d/m"
         interval = "10m"
+    return period, interval
+
+
+def get_query(period, interval, aggs_name, aggs_term):
 
     query = {
         "size": 0,  # this is a count request
@@ -64,8 +70,8 @@ def get_health(region):
             }
         },
         "aggs": {
-            "projects": {
-                "terms": {"field": "service"},
+            aggs_name: {
+                "terms": {"field": aggs_term},
 
                 "aggs": {
                     "avg_fci": {
@@ -96,6 +102,17 @@ def get_health(region):
             }
         }
     }
+    return query
+
+
+@health.route("/region/<region>/health", defaults={"period": "day"})
+@health.route("/region/<region>/health/<period>")
+def get_health(region, period):
+
+    period, interval = get_period_interval(period)
+
+    query = get_query(
+        period, interval, aggs_name="projects", aggs_term="service")
 
     # only match if region is not "all"
     if region != "all":
@@ -117,19 +134,50 @@ def get_health(region):
         "projects": {}
     }
 
-    def convert_(data, field):
-        result = []
-        for d in data["buckets"]:
-            result.append([d["key_as_string"], d[field]["value"]])
-        return result
-
     for project in r.json()["aggregations"]["projects"]["buckets"]:
         result["project_names"].append(project["key"])
         result["projects"][project["key"]] = {
             "fci": project["avg_fci"]["value"],
-            "fci_score_data": convert_(project["data"], "fci"),
-            "response_time_data": convert_(project["data"], "response_time"),
-            "response_size_data": convert_(project["data"], "response_size")
+            "fci_score_data": convert(project["data"], "fci"),
+            "response_time_data": convert(project["data"],
+                                          "response_time"),
+            "response_size_data": convert(project["data"],
+                                          "response_size")
+        }
+
+    return flask.jsonify(**result)
+
+
+@health.route("/health", defaults={"period": "day"})
+@health.route("/health/<period>")
+def get_overview(period):
+
+    period, interval = get_period_interval(period)
+    query = get_query(
+        period, interval, aggs_name="regions", aggs_term="region")
+
+    request = config.get_config()["backend"]["elastic"]
+    r = requests.get("%s/_search" % request, data=json.dumps(query))
+
+    if not r.ok:
+        logging.error("Got {} status when requesting {}. {}".format(
+            request, r.text))
+        raise RuntimeError(r.text)
+
+    result = {
+        "region_names": [],
+        "regions": {}
+    }
+
+    for region in r.json()["aggregations"]["regions"]["buckets"]:
+        result["region_names"].append(region["key"])
+        result["regions"][region["key"]] = {
+            "fci": region["avg_fci"]["value"],
+            "fci_score_data": convert(region["data"], "fci"),
+            "response_time_data": convert(region["data"],
+                                          "response_time"),
+            "response_size_data": convert(region["data"],
+                                          "response_size")
         }
 
     return flask.jsonify(**result)
