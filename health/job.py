@@ -16,68 +16,18 @@
 import importlib
 import json
 import logging
-import sys
 import time
-import traceback
 
-import jsonschema
 import requests
 import schedule
 
+from health import config
 from health.drivers import utils
 from health.mapping import es
 
 
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
-
-
-CONF_PATH = "/etc/health/config.json"
-CONF_SCHEMA = {
-    "type": "object",
-    "$schema": "http://json-schema.org/draft-04/schema",
-    "properties": {
-        "sources": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "region": {
-                        "type": "string"
-                    },
-                    "driver": {
-                        "type": "object",
-                        "properties": {
-                            "type": {"type": "string"},
-                            "elastic_src": {"type": "string"}
-                        },
-                        "required": ["type", "elastic_src"]
-                    }
-                },
-                "required": ["region", "driver"]
-            }
-        },
-        "backend": {
-            "type": "object",
-            "properties": {
-                "elastic": {
-                    "type": "string"
-                }
-            },
-            "required": ["elastic"]
-        },
-        "config": {
-            "type": "object",
-            "properties": {
-                "run_every_minutes": {
-                    "type": "integer",
-                    "minimum": 1
-                }
-            }
-        }
-    },
-    "additionalProperties": False
-}
 
 
 CONF = None
@@ -132,35 +82,19 @@ def job():
 
 def main():
     global CONF
-    try:
-        with open(CONF_PATH) as f:
-            CONF = json.load(f)
-            jsonschema.validate(CONF, CONF_SCHEMA)
+    CONF = config.get_config()
+    # Init Elastic index in backend
+    es.init_elastic(CONF["backend"]["elastic"])
 
-    except (OSError, IOError):
-        logging.error("Sorry, couldn't open configuration file: {}".format(
-            CONF_PATH))
-        traceback.print_exc()
-        sys.exit(1)
-    except jsonschema.ValidationError as e:
-        logging.error(e.message)
-        sys.exit(1)
-    except jsonschema.SchemaError as e:
-        logging.error(e)
-        sys.exit(1)
-    else:
-        # Init Elastic index in backend
-        es.init_elastic(CONF["backend"]["elastic"])
+    # Setup periodic job that does aggregation magic
+    run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
+    schedule.every(run_every_min).minutes.do(job)
 
-        # Setup periodic job that does aggregation magic
-        run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
-        schedule.every(run_every_min).minutes.do(job)
+    job()
 
-        job()
-
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 
 if __name__ == "__main__":
