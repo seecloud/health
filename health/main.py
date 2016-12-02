@@ -19,7 +19,7 @@ from health import config
 
 
 CONF = config.get_config()
-APP_CONF = CONF["flask"]
+APP_CONF = CONF.get("flask", {})
 
 
 app = flask.Flask(__name__, static_folder=None)
@@ -40,8 +40,8 @@ app = routing.add_routing_map(app, html_uri=None, json_uri="/api/v1")
 
 
 def main():
-    app.run(host=APP_CONF["HOST"],
-            port=APP_CONF["PORT"])
+    app.run(host=APP_CONF.get("HOST", "0.0.0.0"),
+            port=APP_CONF.get("PORT", "5000"))
 
 
 if __name__ == "__main__":
