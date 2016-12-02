@@ -17,6 +17,7 @@ import json
 
 import mock
 
+from health import config
 from tests.unit.api.v1 import base
 
 
@@ -77,7 +78,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", self.app.config["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{
@@ -99,7 +100,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", self.app.config["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{
@@ -123,7 +124,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", self.app.config["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{

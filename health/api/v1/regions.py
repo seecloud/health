@@ -18,6 +18,8 @@ import json
 import flask
 import requests
 
+from health import config
+
 
 regions = flask.Blueprint("regions", __name__)
 
@@ -40,9 +42,8 @@ def get_regions():
             }
         }
     }
-    request = flask.current_app.config["backend"]["elastic"]
-    r = requests.get("%s/_search" % request,
-                     data=json.dumps(query))
+    request = config.get_config()["backend"]["elastic"]
+    r = requests.get("%s/_search" % request, data=json.dumps(query))
 
     if not r.ok:
         print("Got {} status when requesting {}. {}".format(request, r.text))
