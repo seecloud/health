@@ -19,6 +19,7 @@ import logging
 import flask
 import requests
 
+from health import config
 
 health = flask.Blueprint("health", __name__)
 
@@ -84,10 +85,10 @@ def get_health(region):
                                 "avg": {"field": "fci"}
                             },
                             "response_size": {
-                                "avg": {"field": "response_time.avg"}
+                                "sum": {"field": "response_size.sum"}
                             },
                             "response_time": {
-                                "avg": {"field": "response_size.avg"}
+                                "avg": {"field": "response_time.95th"}
                             }
                         }
                     }
@@ -103,9 +104,8 @@ def get_health(region):
         }
         query["query"]["bool"]["filter"].append(region)
 
-    request = flask.current_app.config["backend"]["elastic"]
-    r = requests.get("%s/_search" % request,
-                     data=json.dumps(query))
+    request = config.get_config()["backend"]["elastic"]
+    r = requests.get("%s/_search" % request, data=json.dumps(query))
 
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
