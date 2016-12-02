@@ -15,6 +15,7 @@
 
 import json
 import logging
+import sys
 
 import requests
 
@@ -77,7 +78,6 @@ mapping = {
 
 
 def init_elastic(es, index_to_create="ms_health_idx_1"):
-    # TODO(kzaitsev): replace prints with logging
     r = requests.get("%s/%s" % (es, index_to_create))
 
     if not r.ok:
@@ -89,22 +89,6 @@ def init_elastic(es, index_to_create="ms_health_idx_1"):
         else:
             logging.error("Got {} status when creating index '{}'. {}".format(
                 r.status_code, index_to_create, r.text))
-
-    # enable fielddata for some Logger and http_status:
-    for field in ["Logger", "http_status"]:
-        data = {
-            "properties": {
-                field: {
-                    "type": "text",
-                    "fielddata": True,
-                }
-            }
-        }
-        r = requests.put("{}/log-*/_mapping/log".format(es),
-                         data=json.dumps(data))
-        if r.ok:
-            logging.info("Set '{}' fielddata successfull: {}".format(
-                field, r.text))
-        else:
-            logging.error("Got {} status when setting '{}' "
-                          "metadata. {}".format(r.status_code, field, r.text))
+            sys.exit(1)
+    else:
+        logging.info("Index {} already exists".format(index_to_create))

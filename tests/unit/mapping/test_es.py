@@ -22,28 +22,37 @@ from tests.unit import test  # noqa
 class InitElasticTestCase(test.TestCase):
 
     @mock.patch("requests.api.request")
-    def test_existing_index(self, mock_request):
+    def test_init_elastic_index_exists(self, mock_request):
         mock_request.return_value.status_code = 200
         mock_request.return_value.ok = True
         es.init_elastic("fake-es", "ms_health")
-        self.assertEqual(3, mock_request.call_count)
+        self.assertEqual(1, mock_request.call_count)
         calls = [mock.call("get", "fake-es/ms_health",
                            allow_redirects=True, params=None)]
 
         mock_request.assert_has_calls(calls)
 
     @mock.patch("requests.api.request")
-    def test_create_index(self, mock_request):
+    def test_init_elastic_create_index(self, mock_request):
         mock_request.side_effect = [
             mock.Mock(status_code=404, ok=False),
-            mock.Mock(status_code=200, ok=True),
-            mock.Mock(status_code=200, ok=True),
-            mock.Mock(status_code=200, ok=True),
+            mock.Mock(status_code=200, ok=True)
         ]
         es.init_elastic("fake-es", index_to_create="fake-index")
         calls = [mock.call("get", "fake-es/fake-index", allow_redirects=True,
                            params=None),
-                 mock.call("put", "fake-es/fake-index", data=mock.ANY,)
-                 ]
-        self.assertEqual(4, mock_request.call_count)
+                 mock.call("put", "fake-es/fake-index", data=mock.ANY)]
+        self.assertEqual(2, mock_request.call_count)
         mock_request.assert_has_calls(calls)
+
+    @mock.patch("health.mapping.es.sys")
+    @mock.patch("requests.api.request")
+    def test_init_elastic_exit_if_failed(self, mock_request, mock_sys):
+        mock_request.side_effect = [
+            mock.Mock(status_code=404, ok=False),
+            mock.Mock(status_code=400, ok=False)
+        ]
+
+        es.init_elastic("fake-es", index_to_create="fake-index")
+        self.assertEqual(2, mock_request.call_count)
+        mock_sys.exit.assert_called_once_with(1)
