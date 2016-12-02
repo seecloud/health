@@ -5,19 +5,22 @@
         "DEBUG": {% if health.debug %}true{% else %}false{% endif %}
     },
     "sources": [
+    {%- for source in health.sources %}
         {
-            "region": "hooli-west-1",
+            "region": "{{ source.region }}",
             "driver": {
                 "type": "tcp",
-                "elastic_src": "http://1.2.3.4:9200/log-*/log"
+                "elastic_src": "{{ source.elastic_src }}"
             }
         }
+        {%- if loop.length > 1 and not loop.last %},{% endif -%}
+    {%- endfor %}
     ],
     "backend": {
-        "elastic": "{{ health.backend.elastic}}",
+        "elastic": "{{ health.backend.elastic }}",
         "elastic_index": "{{ health.backend.elastic_index }}"
     },
     "config": {
-        "run_every_minutes": 2
+        "run_every_minutes": {{ health.job.frequency }}
     }
 }

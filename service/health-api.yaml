@@ -7,7 +7,10 @@ service:
     - name: health-api
       image: health
       probes:
-        readiness: "httpGet"
+        readiness:
+          type: "httpGet"
+          port: {{ health.port.cont }}
+          path: "/api/v1"
         liveness:
           command: "true"
           type: "exec"
