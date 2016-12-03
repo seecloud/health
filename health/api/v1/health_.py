@@ -127,7 +127,7 @@ def get_health(region, period):
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
             request, r.text))
-        raise RuntimeError(r.text)
+        flask.abort(500, r.text)
 
     result = {
         "project_names": [],
@@ -162,7 +162,7 @@ def get_overview(period):
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
             request, r.text))
-        raise RuntimeError(r.text)
+        flask.abort(500, r.text)
 
     result = {
         "region_names": [],
