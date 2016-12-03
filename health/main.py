@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+
 import flask
 from flask_helpers import routing  # noqa
 
@@ -28,7 +30,14 @@ app.config.update(APP_CONF)
 
 @app.errorhandler(404)
 def not_found(error):
+    logging.error(error)
     return flask.jsonify({"error": "Not Found"}), 404
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    logging.error(str(error))
+    return flask.jsonify({"error": "Internal Server Error"}), 500
 
 
 for bp in [health_, regions]:
