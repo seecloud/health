@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import functools
 import importlib
 import json
 import logging
@@ -43,12 +44,15 @@ def _get_driver(driver_type):
 
 
 def ignore_exceptions(func):
+
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
             logging.error("Caught {} while running '{}' function".format(
                 e, func.__name__))
+
     return wrapper
 
 
