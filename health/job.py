@@ -31,8 +31,6 @@ LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
 
-
-
 def _get_driver(driver_type):
     try:
         return importlib.import_module("." + driver_type + ".driver",
