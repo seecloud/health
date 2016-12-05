@@ -32,7 +32,11 @@ class JobTestCase(test.TestCase):
         super(JobTestCase, self).setUp()
         with open(TEST_CONFIG_PATH) as f:
             test_conf = json.load(f)
-        mock.patch("health.job.CONF", test_conf).start()
+
+        patcher = mock.patch("health.config.get_config")
+        get_config = patcher.start()
+        get_config.return_value = test_conf
+        self.addCleanup(patcher.stop)
 
         # ensure json.dumps produces predictable results
         self.old_dumps = json.dumps
@@ -61,12 +65,14 @@ class JobTestCase(test.TestCase):
         self.assertEqual(4, mock_request.call_count)
         expected_calls = [
             mock.call("post",
-                      "http://4.3.2.1:9200//ms_health/service/_bulk",
+                      "http://4.3.2.1:9200/"
+                      "/ms_health_hooli-west-1/service/_bulk",
                       data='{"index": {}}\n'
                            '{"fake1": "fake1", "region": "hooli-west-1"}',
                       json=None),
             mock.call("post",
-                      "http://4.3.2.1:9200//ms_health/service/_bulk",
+                      "http://4.3.2.1:9200/"
+                      "/ms_health_hooli-west-1/service/_bulk",
                       data='{"index": {}}\n'
                            '{"fake2": "fake2", "region": "hooli-west-1"}',
                       json=None)

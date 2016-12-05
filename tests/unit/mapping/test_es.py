@@ -21,13 +21,17 @@ from tests.unit import test  # noqa
 
 class InitElasticTestCase(test.TestCase):
 
+    def setUp(self):
+        super(InitElasticTestCase, self).setUp()
+        es.existing_indices = set()
+
     @mock.patch("requests.api.request")
     def test_init_elastic_index_exists(self, mock_request):
         mock_request.return_value.status_code = 200
         mock_request.return_value.ok = True
-        es.init_elastic("fake-es", "ms_health")
+        es.ensure_index_exists("fake-es", "regionOne")
         self.assertEqual(1, mock_request.call_count)
-        calls = [mock.call("get", "fake-es/ms_health",
+        calls = [mock.call("get", "fake-es/ms_health_regionOne",
                            allow_redirects=True, params=None)]
 
         mock_request.assert_has_calls(calls)
@@ -38,10 +42,11 @@ class InitElasticTestCase(test.TestCase):
             mock.Mock(status_code=404, ok=False),
             mock.Mock(status_code=200, ok=True)
         ]
-        es.init_elastic("fake-es", index_to_create="fake-index")
-        calls = [mock.call("get", "fake-es/fake-index", allow_redirects=True,
-                           params=None),
-                 mock.call("put", "fake-es/fake-index", data=mock.ANY)]
+        es.ensure_index_exists("fake-es", "regionOne")
+        calls = [mock.call("get", "fake-es/ms_health_regionOne",
+                           allow_redirects=True, params=None),
+                 mock.call("put", "fake-es/ms_health_regionOne",
+                           data=mock.ANY)]
         self.assertEqual(2, mock_request.call_count)
         mock_request.assert_has_calls(calls)
 
@@ -53,6 +58,6 @@ class InitElasticTestCase(test.TestCase):
             mock.Mock(status_code=400, ok=False)
         ]
 
-        es.init_elastic("fake-es", index_to_create="fake-index")
+        es.ensure_index_exists("fake-es", "regionOne")
         self.assertEqual(2, mock_request.call_count)
         mock_sys.exit.assert_called_once_with(1)

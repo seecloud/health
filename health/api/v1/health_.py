@@ -44,9 +44,6 @@ def get_period_interval(period):
     elif period == "month":
         period = "now-30d/m"
         interval = "4h"
-    elif period == "year":
-        period = "now-365d/m"
-        interval = "8h"
     else:
         # assuming day
         period = "now-1d/m"
@@ -109,20 +106,19 @@ def get_query(period, interval, aggs_name, aggs_term):
 @health.route("/region/<region>/health/<period>")
 def get_health(region, period):
 
+    if period not in ["day", "week", "month"]:
+        flask.abort(404, "Unsupported period '{}'".format(period))
+
     period, interval = get_period_interval(period)
 
-    query = get_query(
-        period, interval, aggs_name="projects", aggs_term="service")
+    query = get_query(period, interval,
+                      aggs_name="projects", aggs_term="service")
 
     # only match if region is not "all"
-    if region != "all":
-        region = {
-            "match": {"region": region}
-        }
-        query["query"]["bool"]["filter"].append(region)
 
     request = config.get_config()["backend"]["elastic"]
-    r = requests.get("%s/_search" % request, data=json.dumps(query))
+    r = requests.get("%s/ms_health_%s/_search" % (request, region),
+                     data=json.dumps(query))
 
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
@@ -151,13 +147,16 @@ def get_health(region, period):
 @health.route("/health", defaults={"period": "day"})
 @health.route("/health/<period>")
 def get_overview(period):
+    if period not in ["day", "week", "month"]:
+        flask.abort(404, "Unsupported period '{}'".format(period))
 
     period, interval = get_period_interval(period)
     query = get_query(
         period, interval, aggs_name="regions", aggs_term="region")
 
     request = config.get_config()["backend"]["elastic"]
-    r = requests.get("%s/_search" % request, data=json.dumps(query))
+    r = requests.get("%s/ms_health_*/_search" % request,
+                     data=json.dumps(query))
 
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(

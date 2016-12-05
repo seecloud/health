@@ -56,9 +56,6 @@ mapping = {
     "settings": {
         "number_of_shards": 5
     },
-    "aliases": {
-        "ms_health": {}
-    },
     "mappings": {
         "service": {
             "_all": {"enabled": False},
@@ -76,8 +73,15 @@ mapping = {
     }
 }
 
+existing_indices = set()
 
-def init_elastic(es, index_to_create="ms_health_idx_1"):
+
+def ensure_index_exists(es, region):
+    index_to_create = "ms_health_%s" % region
+
+    if index_to_create in existing_indices:
+        return
+
     r = requests.get("%s/%s" % (es, index_to_create))
 
     if not r.ok:
@@ -86,9 +90,11 @@ def init_elastic(es, index_to_create="ms_health_idx_1"):
         if r.ok:
             logging.info("Index '{}' created successfully".format(
                 index_to_create))
+            existing_indices.add(index_to_create)
         else:
             logging.error("Got {} status when creating index '{}'. {}".format(
                 r.status_code, index_to_create, r.text))
             sys.exit(1)
     else:
+        existing_indices.add(index_to_create)
         logging.info("Index {} already exists".format(index_to_create))
