@@ -124,7 +124,7 @@ def get_health(region, period):
 
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
-            request, r.text))
+            r.status_code, request, r.text))
         flask.abort(500, r.text)
 
     result = {
@@ -137,8 +137,8 @@ def get_health(region, period):
         result["projects"][project["key"]] = {
             "api_calls_count": project["api_calls_count"]["value"],
             "api_calls_count_data": convert(project["data"], "api_count"),
-            "fci": project["avg_fci"]["value"],
-            "fci_score_data": convert(project["data"], "fci"),
+            "fci": project["fci"]["value"],
+            "fci_data": convert(project["data"], "fci"),
             "response_size": project["response_size"]["value"],
             "response_time_data": convert(project["data"],
                                           "response_time"),
@@ -166,7 +166,7 @@ def get_overview(period):
 
     if not r.ok:
         logging.error("Got {} status when requesting {}. {}".format(
-            request, r.text))
+            r.status_code, request, r.text))
         flask.abort(500, r.text)
 
     result = {
@@ -180,7 +180,7 @@ def get_overview(period):
             "api_calls_count": region["api_calls_count"]["value"],
             "api_calls_count_data": convert(region["data"], "api_count"),
             "fci": region["fci"]["value"],
-            "fci_score_data": convert(region["data"], "fci"),
+            "fci_data": convert(region["data"], "fci"),
             "response_size": region["response_size"]["value"],
             "response_time_data": convert(region["data"], "response_time"),
             "response_time": region["response_time"]["value"],

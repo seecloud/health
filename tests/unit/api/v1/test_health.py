@@ -35,19 +35,23 @@ class RegionsTestCase(base.APITestCase):
         service_buckets = []
         for serv in self.services:
             inner_bucket = {
-                "avg_fci": {"value": 1.0},
+                "fci": {"value": 1.0},
+                "api_calls_count": {"value": 4318.0},
                 "data": {
                     "buckets": [{
                         "doc_count": 3,
                         "fci": {"value": 1.0},
+                        "api_count": {"value": 431.0},
                         "key": 1474617600000,
                         "key_as_string": "2016-09-23T08:00",
                         "response_size": {"value": 0.025731437529126804},
-                        "response_time": {"value": 5736.745768229167}
+                        "response_time": {"value": 5736.745768229167},
                     }]
                 },
                 "doc_count": 3,
                 "key": serv,
+                "response_size": {"value": 0.025731437529126804},
+                "response_time": {"value": 5736.745768229167},
             }
 
             service_buckets.append(inner_bucket)
@@ -127,7 +131,7 @@ class RegionsTestCase(base.APITestCase):
 
         resp_json = json.loads(resp.data.decode())
         self.assertEqual(set(self.services), set(resp_json["region_names"]))
-        self.assertEqual(set(self.services), set(resp_json["regions"].keys()))
+        self.assertEqual(set(self.services), set(resp_json["health"].keys()))
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
