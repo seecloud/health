@@ -71,11 +71,10 @@ def get_query(period, interval, aggs_name, aggs_term):
                 "terms": {"field": aggs_term},
 
                 "aggs": {
-                    "avg_fci": {
-                        "avg": {
-                            "field": "fci"
-                        }
-                    },
+                    "fci": {"avg": {"field": "fci"}},
+                    "api_calls_count": {"sum": {"field": "requests_count"}},
+                    "response_size": {"avg": {"field": "response_size.avg"}},
+                    "response_time": {"avg": {"field": "response_time.avg"}},
                     "data": {
                         "date_histogram": {
                             "field": "timestamp",
@@ -86,6 +85,9 @@ def get_query(period, interval, aggs_name, aggs_term):
                         "aggs": {
                             "fci": {
                                 "avg": {"field": "fci"}
+                            },
+                            "api_count": {
+                                "sum": {"field": "requests_count"}
                             },
                             "response_size": {
                                 "sum": {"field": "response_size.sum"}
@@ -133,10 +135,14 @@ def get_health(region, period):
     for project in r.json()["aggregations"]["projects"]["buckets"]:
         result["project_names"].append(project["key"])
         result["projects"][project["key"]] = {
+            "api_calls_count": project["api_calls_count"]["value"],
+            "api_calls_count_data": convert(project["data"], "api_count"),
             "fci": project["avg_fci"]["value"],
             "fci_score_data": convert(project["data"], "fci"),
+            "response_size": project["response_size"]["value"],
             "response_time_data": convert(project["data"],
                                           "response_time"),
+            "response_time": project["response_time"]["value"],
             "response_size_data": convert(project["data"],
                                           "response_size")
         }
@@ -165,18 +171,20 @@ def get_overview(period):
 
     result = {
         "region_names": [],
-        "regions": {}
+        "health": {}
     }
 
     for region in r.json()["aggregations"]["regions"]["buckets"]:
         result["region_names"].append(region["key"])
-        result["regions"][region["key"]] = {
-            "fci": region["avg_fci"]["value"],
+        result["health"][region["key"]] = {
+            "api_calls_count": region["api_calls_count"]["value"],
+            "api_calls_count_data": convert(region["data"], "api_count"),
+            "fci": region["fci"]["value"],
             "fci_score_data": convert(region["data"], "fci"),
-            "response_time_data": convert(region["data"],
-                                          "response_time"),
-            "response_size_data": convert(region["data"],
-                                          "response_size")
+            "response_size": region["response_size"]["value"],
+            "response_time_data": convert(region["data"], "response_time"),
+            "response_time": region["response_time"]["value"],
+            "response_size_data": convert(region["data"], "response_size")
         }
 
     return flask.jsonify(**result)
