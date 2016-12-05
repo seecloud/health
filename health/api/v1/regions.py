@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-
 import flask
 import requests
 
@@ -24,32 +22,18 @@ from health import config
 regions = flask.Blueprint("regions", __name__)
 
 
+@regions.route("/", methods=["GET"])
+def list_regions():
+    """List region names."""
+    resp = requests.get("%s/ms_health_*/_mappings"
+                        % config.get_config()["backend"]["elastic"])
+    if resp.ok:
+        return flask.jsonify([name[10:] for name in resp.json()])
+    else:
+        flask.abort(500)
+
+
 def get_blueprints():
     return [
         ["/regions", regions],
     ]
-
-
-@regions.route("/")
-def get_regions():
-
-    query = {
-        "size": 0,
-        "aggs": {
-            "regions": {
-                "terms": {"field": "region",
-                          "size": 10000}
-            }
-        }
-    }
-    request = config.get_config()["backend"]["elastic"]
-    r = requests.get("%s/_search" % request, data=json.dumps(query))
-
-    if not r.ok:
-        print("Got {} status when requesting {}. {}".format(request, r.text))
-        raise RuntimeError(r.text)
-
-    buckets = r.json()["aggregations"]["regions"]["buckets"]
-    regions = [bucket["key"] for bucket in buckets]
-
-    return flask.jsonify(regions)

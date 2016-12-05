@@ -31,7 +31,6 @@ LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
 
-CONF = None
 
 
 def _get_driver(driver_type):
@@ -58,14 +57,15 @@ def ignore_exceptions(func):
 
 @ignore_exceptions
 def job():
+    CONF = config.get_config()
     started_at = time.time()
     logging.info("Starting Syncing Job")
 
-    backend_url = "%s/ms_health/service" % CONF["backend"]["elastic"]
-
-    min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
-
     for src in CONF["sources"]:
+        backend_url = "%s/ms_health_%s/service" % (
+            CONF["backend"]["elastic"], src["region"])
+        min_ts, max_ts = utils.get_min_max_timestamps(backend_url, "timestamp")
+
         driver = _get_driver(src["driver"]["type"])(src["driver"])
         data_generator = driver.fetch(latest_aggregated_ts=max_ts)
 
@@ -101,10 +101,11 @@ def job():
 
 
 def main():
-    global CONF
     CONF = config.get_config()
     # Init Elastic index in backend
-    es.init_elastic(CONF["backend"]["elastic"])
+
+    for src in CONF["sources"]:
+        es.ensure_index_exists(CONF["backend"]["elastic"], src["region"])
 
     # Setup periodic job that does aggregation magic
     run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)

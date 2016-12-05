@@ -20,29 +20,18 @@ import mock
 from tests.unit.api.v1 import base
 
 
-sample_response = {
-    "aggregations": {
-        "regions": {
-            "buckets": [],
-            "doc_count_error_upper_bound": 0,
-            "sum_other_doc_count": 0
-        }
-    },
-    "hits": {"hits": [], "max_score": 0.0, "total": 1},
-    "timed_out": False,
-    "took": 1,
-}
-
-
 class RegionsTestCase(base.APITestCase):
 
     @mock.patch("requests.api.request")
     def test_get_regions(self, mock_request):
-        regions = ["regionOne", "regionTwo", "regionThree"]
+        sample_response = {
+            "regionOne": mock.ANY,
+            "regionTwo": mock.ANY,
+            "regionThree": mock.ANY,
+        }
+        regions = set(["regionOne", "regionTwo", "regionThree"])
+        sample_response = {"ms_health_" + reg_name for reg_name in regions}
 
-        resp_json = sample_response
-        resp_json["aggregations"]["regions"]["buckets"] = [
-            {"key": reg_name, "doc_count": 1} for reg_name in regions]
         resp = mock.Mock()
         resp.json.return_value = sample_response
         mock_request.side_effect = [resp]

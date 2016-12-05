@@ -80,7 +80,8 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] +
+                "/ms_health_regionOne/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{
@@ -89,8 +90,6 @@ class RegionsTestCase(base.APITestCase):
                     "gte": "now-1d/m"
                 }
             }
-        }, {
-            "match": {"region": "regionOne"}
         }]
         self.assertEqual(expected_filter,
                          data_requested["query"]["bool"]["filter"])
@@ -99,22 +98,21 @@ class RegionsTestCase(base.APITestCase):
     def test_get_health_period(self, mock_request):
         self._mock_response(mock_request)
 
-        resp = self.client.get("/api/v1/region/regionOne/health/year")
+        resp = self.client.get("/api/v1/region/regionOne/health/week")
         self.assertEqual(200, resp.status_code)
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] +
+                "/ms_health_regionOne/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{
             "range": {
                 "timestamp": {
-                    "gte": "now-365d/m"
+                    "gte": "now-7d/m"
                 }
             }
-        }, {
-            "match": {"region": "regionOne"}
         }]
         self.assertEqual(expected_filter,
                          data_requested["query"]["bool"]["filter"])
@@ -133,7 +131,8 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] + "/_search"),
+            ("get", config.get_config()["backend"]["elastic"] +
+                "/ms_health_*/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
         expected_filter = [{
