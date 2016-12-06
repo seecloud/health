@@ -7,10 +7,7 @@ configs:
     wsgi:
       workers: 4
 
-    sources:
-      - region: "hooli-west-1"
-        elastic_src: "http://127.0.0.1:9200/log-*/log"
-
+    sources: []
     backend:
       elastic: "http://127.0.0.1:9200"
       elastic_index: "ms_health_idx_1"
