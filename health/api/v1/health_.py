@@ -129,12 +129,12 @@ def get_health(region, period):
 
     result = {
         "project_names": [],
-        "projects": {}
+        "health": {}
     }
 
     for project in r.json()["aggregations"]["projects"]["buckets"]:
         result["project_names"].append(project["key"])
-        result["projects"][project["key"]] = {
+        result["health"][project["key"]] = {
             "api_calls_count": project["api_calls_count"]["value"],
             "api_calls_count_data": convert(project["data"], "api_count"),
             "fci": project["fci"]["value"],
