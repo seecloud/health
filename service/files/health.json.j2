@@ -17,7 +17,7 @@
     {%- endfor %}
     ],
     "backend": {
-        "elastic": "{{ health.backend.elastic }}"
+        "elastic": "http://{{ elasticsearch.hosts[0].host }}:{{ elasticsearch.hosts[0].port }}/"
     },
     "config": {
         "run_every_minutes": {{ health.job.frequency }}

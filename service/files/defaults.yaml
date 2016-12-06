@@ -8,8 +8,6 @@ configs:
       workers: 4
 
     sources: []
-    backend:
-      elastic: "http://127.0.0.1:9200"
 
     job:
       frequency: 2
