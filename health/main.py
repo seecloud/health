@@ -45,7 +45,7 @@ for bp in [health_, regions]:
         app.register_blueprint(blueprint, url_prefix="/api/v1%s" % url_prefix)
 
 
-app = routing.add_routing_map(app, html_uri=None, json_uri="/api/v1")
+app = routing.add_routing_map(app, html_uri=None, json_uri="/")
 
 
 def main():
