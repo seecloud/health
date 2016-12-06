@@ -1,8 +1,6 @@
 dsl_version: 0.1.0
 service:
   name: health-job
-  ports:
-    - {{ health.port }}
   containers:
     - name: health-job
       image: health
