@@ -80,7 +80,7 @@ class RegionsTestCase(base.APITestCase):
         resp_json = json.loads(resp.data.decode())
         self.assertEqual(200, resp.status_code)
         self.assertEqual(set(self.services), set(resp_json["project_names"]))
-        self.assertEqual(set(self.services), set(resp_json["projects"].keys()))
+        self.assertEqual(set(self.services), set(resp_json["health"].keys()))
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
