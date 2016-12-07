@@ -66,7 +66,7 @@ class Driver(driver.Base):
                 "date_histogram": {
                     "field": "Timestamp",
                     "interval": "minute",
-                    "format": "yyyy-MM-dd'T'hh:mm:ss",
+                    "format": "yyyy-MM-dd'T'HH:mm:ss",
                     "min_doc_count": 0
                 },
                 "aggs": {
