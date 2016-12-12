@@ -17,8 +17,7 @@
     {%- endfor %}
     ],
     "backend": {
-        "elastic": "{{ health.backend.elastic }}",
-        "elastic_index": "{{ health.backend.elastic_index }}"
+        "elastic": "{{ health.backend.elastic }}"
     },
     "config": {
         "run_every_minutes": {{ health.job.frequency }}
