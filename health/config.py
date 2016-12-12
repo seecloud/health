@@ -39,7 +39,6 @@ DEFAULT_CONF = {
     ],
     "backend": {
         "elastic": "http://127.0.0.1:9200/",
-        "elastic_index": "ms_health_idx_1"
     },
     "config": {
         "run_every_minutes": 2

@@ -10,7 +10,6 @@ configs:
     sources: []
     backend:
       elastic: "http://127.0.0.1:9200"
-      elastic_index: "ms_health_idx_1"
 
     job:
       frequency: 2
