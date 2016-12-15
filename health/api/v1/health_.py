@@ -87,10 +87,10 @@ def get_query(period, interval, aggs_name, aggs_term):
                                 "avg": {"field": "fci"}
                             },
                             "api_count": {
-                                "sum": {"field": "requests_count"}
+                                "avg": {"field": "requests_count"}
                             },
                             "response_size": {
-                                "sum": {"field": "response_size.sum"}
+                                "avg": {"field": "response_size.sum"}
                             },
                             "response_time": {
                                 "avg": {"field": "response_time.95th"}
