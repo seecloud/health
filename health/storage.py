@@ -13,11 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 import logging
 import sys
 
-import requests
+import elasticsearch
+
+from health import config
+
 
 _http_codes = {
     "type": "object",
@@ -52,7 +54,7 @@ _stats = {
     }
 }
 
-mapping = {
+ES_MAPPINGS = {
     "settings": {
         "number_of_shards": 5
     },
@@ -73,28 +75,46 @@ mapping = {
     }
 }
 
-existing_indices = set()
+ES_CLIENT = None
 
 
-def ensure_index_exists(es, region):
+def get_elasticsearch():
+    """Configures or returns already configured ES client."""
+    global ES_CLIENT
+    if not ES_CLIENT:
+        nodes = config.get_config()["backend"]["connection"]
+        ES_CLIENT = elasticsearch.Elasticsearch(nodes)
+    return ES_CLIENT
+
+
+EXISTING_INDICES = set()
+
+
+def ensure_index_exists(region):
     index_to_create = "ms_health_%s" % region
 
-    if index_to_create in existing_indices:
+    if index_to_create in EXISTING_INDICES:
         return
 
-    r = requests.get("%s/%s" % (es, index_to_create))
+    es = get_elasticsearch()
 
-    if not r.ok:
-        r = requests.put("%s/%s" % (es, index_to_create),
-                         data=json.dumps(mapping))
-        if r.ok:
-            logging.info("Index '{}' created successfully".format(
-                index_to_create))
-            existing_indices.add(index_to_create)
-        else:
-            logging.error("Got {} status when creating index '{}'. {}".format(
-                r.status_code, index_to_create, r.text))
-            sys.exit(1)
+    if not es.indices.exists(index_to_create):
+        try:
+            es.indices.create(index_to_create, ES_MAPPINGS)
+            logging.info("Created '{}' index".format(index_to_create))
+        except elasticsearch.ElasticsearchException as e:
+            if e.error == "index_already_exists_exception":
+                # we might catch already exists here if 2 jobs are strted
+                # concurrently. It's ok.
+                logging.info(
+                    "Index {} already exists".format(index_to_create))
+                EXISTING_INDICES.add(index_to_create)
+            else:
+                logging.error(
+                    "Got {} error when creating index '{}'.".format(
+                        e, index_to_create))
+                sys.exit(1)
+            EXISTING_INDICES.add(index_to_create)
     else:
-        existing_indices.add(index_to_create)
         logging.info("Index {} already exists".format(index_to_create))
+        EXISTING_INDICES.add(index_to_create)

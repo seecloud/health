@@ -15,7 +15,8 @@
     ],
     "backend": {
         "elastic": "http://4.3.2.1:9200/",
-        "elastic_index": "ms_health_idx_1"
+        "type": "elastic",
+        "connection": [{"host": "127.0.0.1", "port": 9200}]
     },
     "config": {
         "run_every_minutes": 2

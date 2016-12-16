@@ -24,7 +24,7 @@ import schedule
 
 from health import config
 from health.drivers import utils
-from health.mapping import es
+from health import storage
 
 
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
@@ -103,7 +103,7 @@ def main():
     # Init Elastic index in backend
 
     for src in CONF["sources"]:
-        es.ensure_index_exists(CONF["backend"]["elastic"], src["region"])
+        storage.ensure_index_exists(src["region"])
 
     # Setup periodic job that does aggregation magic
     run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
