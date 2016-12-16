@@ -39,6 +39,8 @@ DEFAULT_CONF = {
     ],
     "backend": {
         "elastic": "http://127.0.0.1:9200/",
+        "type": "elastic",
+        "connection": [{"host": "127.0.0.1", "port": 9200}]
     },
     "config": {
         "run_every_minutes": 2
@@ -75,11 +77,22 @@ CONF_SCHEMA = {
         "backend": {
             "type": "object",
             "properties": {
-                "elastic": {
-                    "type": "string"
-                }
+                "elastic": {"type": "string"},
+                "type": {"type": "string"},
+                "connection": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "host": {"type": "string"},
+                            "port": {"type": "integer"}
+                        },
+                        "required": ["host"]
+                    },
+                    "minItems": 1
+                },
             },
-            "required": ["elastic"]
+            "required": ["elastic", "type", "connection"]
         },
         "config": {
             "type": "object",
