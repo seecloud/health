@@ -13,7 +13,7 @@
 import logging
 
 import flask
-from flask_helpers import routing  # noqa
+from oss_lib import routing
 
 from health.api.v1 import health_
 from health.api.v1 import regions
