@@ -1,0 +1,11 @@
+sources:
+{%- for source in health.sources %}
+  - region: {{ source.region }}
+    driver:
+      type: tcp
+      elastic_src: {{ source.elastic_src }}
+{%- endfor %}
+backend:
+  elastic: http://{{ elasticsearch.hosts[0].host }}:{{ elasticsearch.hosts[0].port }}/
+config:
+  run_every_minutes: {{ health.job.frequency }}

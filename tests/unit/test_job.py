@@ -26,7 +26,7 @@ import tests
 from tests.unit import test
 
 TEST_CONFIG_PATH = os.path.join(os.path.dirname(tests.__file__), "..",
-                                "etc", "config.json")
+                                "etc", "config.yaml")
 
 
 class JobTestCase(test.TestCase):

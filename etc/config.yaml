@@ -1,0 +1,10 @@
+sources:
+  - region: hooli-west-1
+    driver:
+      type: tcp
+      elastic_src: http://1.2.3.4:9200/log-*/log
+backend:
+  elastic: http://4.3.2.1:9200/
+  elastic_index: ms_health_idx_1
+config:
+  run_every_minutes: 2
