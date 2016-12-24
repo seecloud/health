@@ -14,17 +14,15 @@
 #    under the License.
 
 import json
-import os.path
 
 import mock
-from oss_lib import config
 import testtools
 
 import health.app
-from health import config as cfg
+from tests.unit import test
 
 
-class APITestCase(testtools.TestCase):
+class APITestCase(test.ConfigFixtureMixin, testtools.TestCase):
 
     def setUp(self):
         super(APITestCase, self).setUp()
@@ -33,15 +31,8 @@ class APITestCase(testtools.TestCase):
         self.app = health.app.app
 
         # Setup configuration for tests
-        config_path = os.path.join(
-            os.path.dirname(__file__), 'etc/config.yaml')
-
-        patcher = mock.patch("oss_lib.config._CONF")
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-        config.setup_config(config_path, validation_schema=cfg.SCHEMA)
-        self.app.config.update(config.CONF)
+        conf = self.setup_config_fixture()
+        self.app.config.update(conf)
 
     def test_not_found(self):
         resp = self.client.get('/404')
