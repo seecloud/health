@@ -24,6 +24,8 @@ import requests
 from health.drivers import driver
 from health.drivers import utils
 
+LOG = logging.getLogger(__name__)
+
 
 class Driver(driver.Base):
 
@@ -164,8 +166,8 @@ class Driver(driver.Base):
         ts_min, ts_max = utils.get_min_max_timestamps(es, "Timestamp")
 
         if ts_min is ts_max is None:
-            logging.error("Got no timestamps from source es,"
-                          " will skip fetching data for {}".format(es))
+            LOG.error("Got no timestamps from source es, will skip fetching "
+                      "data for %s", es)
             return
 
         if latest_aggregated_ts:
@@ -179,14 +181,12 @@ class Driver(driver.Base):
                 resp = requests.post("%s/_search" % es,
                                      data=json.dumps(body))
             except requests.exceptions.RequestException as e:
-                logging.error(
-                    "Was unable to make a request for interval {}\n{}".format(
-                        interval, e))
+                LOG.error("Was unable to make a request for interval %s: %s",
+                          interval, e)
 
             if not resp.ok:
-                logging.error(
-                    "Got a non-ok response for interval {}\n{}".format(
-                        interval, resp.text))
+                LOG.error("Got a non-ok response for interval %s: %s",
+                          interval, resp.text)
                 continue
             resp = resp.json()
 

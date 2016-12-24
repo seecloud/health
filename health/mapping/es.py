@@ -19,6 +19,8 @@ import sys
 
 import requests
 
+LOG = logging.getLogger(__name__)
+
 _http_codes = {
     "type": "object",
     "properties": {
@@ -88,13 +90,12 @@ def ensure_index_exists(es, region):
         r = requests.put("%s/%s" % (es, index_to_create),
                          data=json.dumps(mapping))
         if r.ok:
-            logging.info("Index '{}' created successfully".format(
-                index_to_create))
+            LOG.info("Index '%s' created successfully", index_to_create)
             existing_indices.add(index_to_create)
         else:
-            logging.error("Got {} status when creating index '{}'. {}".format(
-                r.status_code, index_to_create, r.text))
+            LOG.error("Got %s status when creating index '%s': %s",
+                      r.status_code, index_to_create, r.text)
             sys.exit(1)
     else:
         existing_indices.add(index_to_create)
-        logging.info("Index {} already exists".format(index_to_create))
+        LOG.info("Index %s already exists.", index_to_create)

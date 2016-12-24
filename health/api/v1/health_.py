@@ -21,6 +21,8 @@ import requests
 
 from health import config
 
+LOG = logging.getLogger(__name__)
+
 health = flask.Blueprint("health", __name__)
 
 
@@ -123,8 +125,8 @@ def get_health(region, period):
                      data=json.dumps(query))
 
     if not r.ok:
-        logging.error("Got {} status when requesting {}. {}".format(
-            r.status_code, request, r.text))
+        LOG.error("Got %s status when requesting %s: %s",
+                  r.status_code, request, r.text)
         flask.abort(500, r.text)
 
     result = {
@@ -165,8 +167,8 @@ def get_overview(period):
                      data=json.dumps(query))
 
     if not r.ok:
-        logging.error("Got {} status when requesting {}. {}".format(
-            r.status_code, request, r.text))
+        LOG.error("Got %s status when requesting %s: %s",
+                  r.status_code, request, r.text)
         flask.abort(500, r.text)
 
     result = {

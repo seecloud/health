@@ -26,9 +26,9 @@ from health import config
 from health.drivers import utils
 from health.mapping import es
 
-
 LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
+LOG = logging.getLogger(__name__)
 
 
 def _get_driver(driver_type):
@@ -36,7 +36,7 @@ def _get_driver(driver_type):
         return importlib.import_module("." + driver_type + ".driver",
                                        "health.drivers").Driver
     except ImportError:
-        logging.error("Could not load driver for '{}'".format(driver_type))
+        LOG.error("Could not load driver for '%s'", driver_type)
         raise
 
 
@@ -47,8 +47,8 @@ def ignore_exceptions(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logging.error("Caught {} while running '{}' function".format(
-                e, func.__name__))
+            LOG.error("Caught %s while running '%s' function",
+                      e, func.__name__)
 
     return wrapper
 
@@ -57,7 +57,7 @@ def ignore_exceptions(func):
 def job():
     CONF = config.get_config()
     started_at = time.time()
-    logging.info("Starting Syncing Job")
+    LOG.info("Starting Syncing Job")
 
     for src in CONF["sources"]:
         backend_url = "%s/ms_health_%s/service" % (
@@ -67,13 +67,13 @@ def job():
         driver = _get_driver(src["driver"]["type"])(src["driver"])
         data_generator = driver.fetch(latest_aggregated_ts=max_ts)
 
-        logging.info("Start syncing %s region" % src["region"])
+        LOG.info("Start syncing %s region", src["region"])
 
         for i, data_interval in enumerate(data_generator):
 
             if not data_interval:
-                logging.info("Chunk %s from region %s is already synced."
-                             % (i, src["region"]))
+                LOG.info("Chunk %s from region %s is already synced.",
+                         i, src["region"])
                 continue
 
             req_data = []
@@ -83,19 +83,18 @@ def job():
                 req_data.append('{"index": {}}')
                 req_data.append(json.dumps(d))
             req_data = "\n".join(req_data)
-            logging.info("Sending data from chunk {} to backend".format(i))
+            LOG.info("Sending data from chunk %s to backend", i)
 
             try:
                 r = requests.post("%s/_bulk" % backend_url, data=req_data)
             except requests.exceptions.RequestException:
-                logging.error("Was unable to store data for {} "
-                              "Stopping current job run".format(
-                                  data_interval))
+                LOG.error("Was unable to store data for %s Stopping current "
+                          "job run", data_interval)
                 break
-            logging.debug(r.text)
+            LOG.debug(r.text)
 
-    logging.info("Syncing job completed in %.3f seconds"
-                 % (time.time() - started_at))
+    LOG.info("Syncing job completed in %.3f seconds",
+             (time.time() - started_at))
 
 
 def main():
