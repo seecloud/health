@@ -19,16 +19,16 @@ import json
 import logging
 import time
 
+from oss_lib import config
 import requests
 import schedule
 
-from health import config
+from health import config as cfg
 from health.drivers import utils
 from health.mapping import es
 
-LOGGING_FORMAT = '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 LOG = logging.getLogger(__name__)
+CONF = config.CONF
 
 
 def _get_driver(driver_type):
@@ -55,7 +55,6 @@ def ignore_exceptions(func):
 
 @ignore_exceptions
 def job():
-    CONF = config.get_config()
     started_at = time.time()
     LOG.info("Starting Syncing Job")
 
@@ -98,14 +97,17 @@ def job():
 
 
 def main():
-    CONF = config.get_config()
+    config.process_args("HEALTH",
+                        default_config_path=cfg.DEFAULT_CONF_PATH,
+                        defaults=cfg.DEFAULT,
+                        validation_schema=cfg.SCHEMA)
     # Init Elastic index in backend
 
     for src in CONF["sources"]:
         es.ensure_index_exists(CONF["backend"]["elastic"], src["region"])
 
     # Setup periodic job that does aggregation magic
-    run_every_min = CONF.get("config", {}).get("run_every_minutes", 1)
+    run_every_min = CONF["config"]["run_every_minutes"]
     schedule.every(run_every_min).minutes.do(job)
 
     job()
@@ -113,7 +115,3 @@ def main():
     while True:
         schedule.run_pending()
         time.sleep(1)
-
-
-if __name__ == "__main__":
-    main()

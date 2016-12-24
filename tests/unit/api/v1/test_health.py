@@ -16,9 +16,11 @@
 import json
 
 import mock
+from oss_lib import config
 
-from health import config
 from tests.unit.api.v1 import base
+
+CONF = config.CONF
 
 
 class RegionsTestCase(base.APITestCase):
@@ -84,7 +86,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] +
+            ("get", CONF["backend"]["elastic"] +
                 "/ms_health_regionOne/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
@@ -107,7 +109,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] +
+            ("get", CONF["backend"]["elastic"] +
                 "/ms_health_regionOne/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])
@@ -135,7 +137,7 @@ class RegionsTestCase(base.APITestCase):
 
         request_args, request_kwargs = mock_request.call_args
         self.assertEqual(
-            ("get", config.get_config()["backend"]["elastic"] +
+            ("get", CONF["backend"]["elastic"] +
                 "/ms_health_*/_search"),
             request_args)
         data_requested = json.loads(request_kwargs["data"])

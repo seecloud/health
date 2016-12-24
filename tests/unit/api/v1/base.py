@@ -17,9 +17,11 @@ import json
 import os.path
 
 import mock
+from oss_lib import config
 import testtools
 
-import health.main
+import health.app
+from health import config as cfg
 
 
 class APITestCase(testtools.TestCase):
@@ -27,13 +29,19 @@ class APITestCase(testtools.TestCase):
     def setUp(self):
         super(APITestCase, self).setUp()
         self.addCleanup(mock.patch.stopall)
-        self.client = health.main.app.test_client()
-        self.app = health.main.app
+        self.client = health.app.app.test_client()
+        self.app = health.app.app
 
+        # Setup configuration for tests
         config_path = os.path.join(
             os.path.dirname(__file__), 'etc/config.json')
-        config = json.load(open(config_path))
-        self.app.config.update(config)
+
+        patcher = mock.patch("oss_lib.config._CONF")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        config.setup_config(config_path, validation_schema=cfg.SCHEMA)
+        self.app.config.update(config.CONF)
 
     def test_not_found(self):
         resp = self.client.get('/404')

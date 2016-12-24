@@ -16,7 +16,7 @@ service:
           type: "exec"
       daemon:
         command:
-          gunicorn -w {{ health.wsgi.workers }} -b 0.0.0.0:{{ health.port.cont }} main:app
+          gunicorn -w {{ health.wsgi.workers }} -b 0.0.0.0:{{ health.port.cont }} health.wsgi
         files:
           - health.conf
 

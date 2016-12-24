@@ -3,12 +3,9 @@ configs:
     port:
       cont: 5000
     debug: true
-
     wsgi:
       workers: 4
-
     sources: []
-
     job:
       frequency: 2
 

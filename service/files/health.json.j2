@@ -1,9 +1,4 @@
 {
-    "flask": {
-        "HOST": "0.0.0.0",
-        "PORT": {{ health.port.cont }},
-        "DEBUG": {% if health.debug %}true{% else %}false{% endif %}
-    },
     "sources": [
     {%- for source in health.sources %}
         {

@@ -18,10 +18,12 @@ import json
 import os
 
 import mock
+from oss_lib import config
 
+from health import config as cfg
 from health import job
 import tests
-from tests.unit import test  # noqa
+from tests.unit import test
 
 TEST_CONFIG_PATH = os.path.join(os.path.dirname(tests.__file__), "..",
                                 "etc", "config.json")
@@ -30,21 +32,18 @@ TEST_CONFIG_PATH = os.path.join(os.path.dirname(tests.__file__), "..",
 class JobTestCase(test.TestCase):
     def setUp(self):
         super(JobTestCase, self).setUp()
-        with open(TEST_CONFIG_PATH) as f:
-            test_conf = json.load(f)
-
-        patcher = mock.patch("health.config.get_config")
-        get_config = patcher.start()
-        get_config.return_value = test_conf
+        # Setup configuration for tests
+        patcher = mock.patch("oss_lib.config._CONF")
+        patcher.start()
         self.addCleanup(patcher.stop)
 
-        # ensure json.dumps produces predictable results
-        self.old_dumps = json.dumps
-        json.dumps = functools.partial(json.dumps, sort_keys=True)
+        config.setup_config(TEST_CONFIG_PATH, validation_schema=cfg.SCHEMA)
 
-    def tearDown(self):
-        super(JobTestCase, self).tearDown()
-        json.dumps = self.old_dumps
+        # ensure json.dumps produces predictable results
+        dumps_with_sorting = functools.partial(json.dumps, sort_keys=True)
+        patcher = mock.patch("json.dumps", new=dumps_with_sorting)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_exceptions_decorator(self):
         self.assertTrue(job.ignore_exceptions(lambda: True)())

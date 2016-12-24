@@ -17,11 +17,12 @@ import json
 import logging
 
 import flask
+from oss_lib import config
 import requests
 
-from health import config
 
 LOG = logging.getLogger(__name__)
+CONF = config.CONF
 
 health = flask.Blueprint("health", __name__)
 
@@ -120,7 +121,7 @@ def get_health(region, period):
 
     # only match if region is not "all"
 
-    request = config.get_config()["backend"]["elastic"]
+    request = CONF["backend"]["elastic"]
     r = requests.get("%s/ms_health_%s/_search" % (request, region),
                      data=json.dumps(query))
 
@@ -162,7 +163,7 @@ def get_overview(period):
     query = get_query(
         period, interval, aggs_name="regions", aggs_term="region")
 
-    request = config.get_config()["backend"]["elastic"]
+    request = CONF["backend"]["elastic"]
     r = requests.get("%s/ms_health_*/_search" % request,
                      data=json.dumps(query))
 
