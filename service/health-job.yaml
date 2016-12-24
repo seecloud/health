@@ -17,5 +17,5 @@ service:
 
 files:
   health.conf:
-    path: /etc/health/config.json
-    content: health.json.j2
+    path: /etc/health/config.yaml
+    content: health.yaml.j2

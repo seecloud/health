@@ -34,7 +34,7 @@ class APITestCase(testtools.TestCase):
 
         # Setup configuration for tests
         config_path = os.path.join(
-            os.path.dirname(__file__), 'etc/config.json')
+            os.path.dirname(__file__), 'etc/config.yaml')
 
         patcher = mock.patch("oss_lib.config._CONF")
         patcher.start()
