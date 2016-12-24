@@ -19,6 +19,7 @@ import logging
 
 import requests
 
+LOG = logging.getLogger(__name__)
 
 TS_FMT = "%Y-%m-%dT%H:%M:%S"
 
@@ -37,9 +38,9 @@ def get_min_max_timestamps(es, field):
         url, data=json.dumps({"sort": {field: {"order": "asc"}}}))
 
     if not r_min.ok:
-        logging.error("Got {} status when requesting {}, "
-                      "assuming empty intervals. {}".format(
-                          r_min.status_code, url, r_min.text))
+        LOG.error(
+            "Got %s status when requesting %s, assuming empty intervals: %s",
+            r_min.status_code, url, r_min.text)
         return [None, None]
 
     if r_min.json()["hits"]["total"] == 0:
