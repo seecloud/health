@@ -10,48 +10,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
+import argparse
 
-import flask
-from oss_lib import routing
+from oss_lib import config
 
-from health.api.v1 import health_
-from health.api.v1 import regions
-from health import config
-
-
-CONF = config.get_config()
-APP_CONF = CONF.get("flask", {})
-
-
-app = flask.Flask(__name__, static_folder=None)
-app.config.update(APP_CONF)
-
-
-@app.errorhandler(404)
-def not_found(error):
-    logging.error(error)
-    return flask.jsonify({"error": "Not Found"}), 404
-
-
-@app.errorhandler(500)
-def handle_500(error):
-    logging.error(str(error))
-    return flask.jsonify({"error": "Internal Server Error"}), 500
-
-
-for bp in [health_, regions]:
-    for url_prefix, blueprint in bp.get_blueprints():
-        app.register_blueprint(blueprint, url_prefix="/api/v1%s" % url_prefix)
-
-
-app = routing.add_routing_map(app, html_uri=None, json_uri="/")
+from health import app
+from health import config as cfg
 
 
 def main():
-    app.run(host=APP_CONF.get("HOST", "0.0.0.0"),
-            port=APP_CONF.get("PORT", "5000"))
-
-
-if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host",
+                        default="0.0.0.0",
+                        help="A host to bind development server. "
+                             "(default 0.0.0.0)")
+    parser.add_argument("--port",
+                        type=int,
+                        default=5000,
+                        help="A port to bind development server. "
+                             "(default 5000)")
+    args = config.process_args("HEALTH",
+                               parser=parser,
+                               default_config_path=cfg.DEFAULT_CONF_PATH,
+                               defaults=cfg.DEFAULT,
+                               validation_schema=cfg.SCHEMA)
+    app.app.config.update(config.CONF, **{"DEBUG": args.debug})
+    app.app.run(host=args.host, port=args.port)

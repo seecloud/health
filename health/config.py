@@ -13,110 +13,63 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
-import logging
-import os
-import sys
+DEFAULT_CONF_PATH = "/etc/health/config.json"
 
-import jsonschema
-
-
-CONF = None
-DEFAULT_CONF = {
-    "flask": {
-        "HOST": "0.0.0.0",
-        "PORT": 5000,
-        "DEBUG": False
-    },
+DEFAULT = {
     "sources": [
         {
             "region": "region",
             "driver": {
                 "type": "tcp",
-                "elastic_src": "http://127.0.0.1:9200/log-*/log"
-            }
-        }
+                "elastic_src": "http://127.0.0.1:9200/log-*/log",
+            },
+        },
     ],
     "backend": {
         "elastic": "http://127.0.0.1:9200/",
     },
     "config": {
-        "run_every_minutes": 2
-    }
-}
-
-CONF_SCHEMA = {
-    "type": "object",
-    "$schema": "http://json-schema.org/draft-04/schema",
-    "properties": {
-        "flask": {
-            "type": "object"
-        },
-        "sources": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "region": {
-                        "type": "string"
-                    },
-                    "driver": {
-                        "type": "object",
-                        "properties": {
-                            "type": {"type": "string"},
-                            "elastic_src": {"type": "string"}
-                        },
-                        "required": ["type", "elastic_src"]
-                    }
-                },
-                "required": ["region", "driver"]
-            }
-        },
-        "backend": {
-            "type": "object",
-            "properties": {
-                "elastic": {
-                    "type": "string"
-                }
-            },
-            "required": ["elastic"]
-        },
-        "config": {
-            "type": "object",
-            "properties": {
-                "run_every_minutes": {
-                    "type": "integer",
-                    "minimum": 1
-                }
-            }
-        }
+        "run_every_minutes": 2,
     },
-    "additionalProperties": False
 }
 
-
-def get_config():
-    """Return cached configuration.
-
-    :returns: application config
-    :rtype: dict
-    """
-    global CONF
-    if not CONF:
-        path = os.environ.get("HEALTH_CONF", "/etc/health/config.json")
-        try:
-            CONF = json.load(open(path))
-            logging.info("Config is '%s'" % path)
-        except IOError as e:
-            logging.warning("Config at '%s': %s" % (path, e))
-            CONF = DEFAULT_CONF
-    try:
-        jsonschema.validate(CONF, CONF_SCHEMA)
-    except jsonschema.ValidationError as e:
-        logging.error(e.message)
-        sys.exit(1)
-    except jsonschema.SchemaError as e:
-        logging.error(e)
-        sys.exit(1)
-    else:
-        return CONF
+SCHEMA = {
+    "sources": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "region": {
+                    "type": "string",
+                },
+                "driver": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string"},
+                        "elastic_src": {"type": "string"},
+                    },
+                    "required": ["type", "elastic_src"],
+                },
+            },
+            "required": ["region", "driver"],
+        },
+    },
+    "backend": {
+        "type": "object",
+        "properties": {
+            "elastic": {
+                "type": "string"
+            },
+        },
+        "required": ["elastic"],
+    },
+    "config": {
+        "type": "object",
+        "properties": {
+            "run_every_minutes": {
+                "type": "integer",
+                "minimum": 1,
+            },
+        },
+    },
+}

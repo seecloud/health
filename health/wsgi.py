@@ -13,27 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import flask
 from oss_lib import config
-import requests
 
-CONF = config.CONF
-
-regions = flask.Blueprint("regions", __name__)
+from health import app
+from health import config as cfg
 
 
-@regions.route("/", methods=["GET"])
-def list_regions():
-    """List region names."""
-    resp = requests.get("%s/ms_health_*/_mappings"
-                        % CONF["backend"]["elastic"])
-    if resp.ok:
-        return flask.jsonify([name[10:] for name in resp.json()])
-    else:
-        flask.abort(500)
+config.process_env("HEALTH",
+                   default_config_path=cfg.DEFAULT_CONF_PATH,
+                   defaults=cfg.DEFAULT,
+                   validation_schema=cfg.SCHEMA)
 
-
-def get_blueprints():
-    return [
-        ["/regions", regions],
-    ]
+app.app.config.update(config.CONF)
+application = app
