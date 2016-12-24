@@ -13,8 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 import mock
+from oss_lib import config
 import testtools
+
+from health import config as cfg
+
+TEST_FILES_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "files"))
 
 
 class TestCase(testtools.TestCase):
@@ -25,3 +33,13 @@ class TestCase(testtools.TestCase):
 
     def mock_request(self):
         return mock.patch("requests.api.request").start()
+
+
+class ConfigFixtureMixin(object):
+    def setup_config_fixture(self, filename="config.yaml"):
+        patcher = mock.patch("oss_lib.config._CONF")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        config_path = os.path.join(TEST_FILES_DIR, filename)
+        return config.setup_config(config_path, validation_schema=cfg.SCHEMA)

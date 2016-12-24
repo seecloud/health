@@ -15,29 +15,18 @@
 
 import functools
 import json
-import os
 
 import mock
-from oss_lib import config
 
-from health import config as cfg
 from health import job
-import tests
 from tests.unit import test
 
-TEST_CONFIG_PATH = os.path.join(os.path.dirname(tests.__file__), "..",
-                                "etc", "config.yaml")
 
-
-class JobTestCase(test.TestCase):
+class JobTestCase(test.ConfigFixtureMixin, test.TestCase):
     def setUp(self):
         super(JobTestCase, self).setUp()
         # Setup configuration for tests
-        patcher = mock.patch("oss_lib.config._CONF")
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-        config.setup_config(TEST_CONFIG_PATH, validation_schema=cfg.SCHEMA)
+        self.setup_config_fixture()
 
         # ensure json.dumps produces predictable results
         dumps_with_sorting = functools.partial(json.dumps, sort_keys=True)
