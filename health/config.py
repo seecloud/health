@@ -52,6 +52,7 @@ SCHEMA = {
                 },
             },
             "required": ["region", "driver"],
+            "additionalProperties": False,
         },
     },
     "backend": {
@@ -62,6 +63,7 @@ SCHEMA = {
             },
         },
         "required": ["elastic"],
+        "additionalProperties": False,
     },
     "config": {
         "type": "object",
@@ -71,5 +73,6 @@ SCHEMA = {
                 "minimum": 1,
             },
         },
+        "additionalProperties": False,
     },
 }
