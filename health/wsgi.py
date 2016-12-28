@@ -25,4 +25,4 @@ config.process_env("HEALTH",
                    validation_schema=cfg.SCHEMA)
 
 app.app.config.update(config.CONF)
-application = app
+application = app.app
